@@ -2,6 +2,27 @@
 
 Un videogioco mobile fantasy basato su sport aereo con meccaniche innovative ispirate a sport magici.
 
+## 🎮 **GIOCA SUBITO NEL BROWSER!** ⚡
+
+**Versione WebGL giocabile - Non serve Unity, non serve installare niente!**
+
+### Quick Play (5 secondi):
+
+1. Vai nella cartella **`web/`**
+2. **Doppio click su `index.html`**
+3. Click su **"INIZIA"**
+4. **GIOCA!** 🎮
+
+**Controlli**:
+- **PC**: WASD + Spazio/Ctrl + Shift (boost)
+- **Mobile**: Joystick touch + Bottone boost
+
+**Obiettivo**: Insegui e cattura il Radiant Globe dorato nel minor tempo!
+
+👉 **[Guida completa versione Web →](web/README.md)**
+
+---
+
 ## 🎮 Concept del Gioco
 
 **Sky Spheres** è un gioco di sport aereo ambientato in un'arena sospesa nel cielo, dove i giocatori competono in squadre pilotando Sky Gliders (alianti magici).
