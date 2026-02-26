@@ -1,6 +1,69 @@
 # 📝 Changelog - Sky Spheres
 
+## [2.0.1] - CRITICAL BUG FIXES - 2026-02-26 ✅
+
+### 🐛 Critical Bugs Fixed
+
+#### ✅ FIXED: THREE.Vector3 initialization error
+**Issue**: `playerVelocity = new THREE.Vector3()` executed at global scope before THREE.js loaded
+**Impact**: TypeError crash on page load
+**Fix**: Moved initialization inside `init()` function after THREE.js availability check
+```javascript
+// Before (BROKEN)
+let playerVelocity = new THREE.Vector3(); // ❌ THREE not loaded yet
+
+// After (FIXED)
+let playerVelocity; // Declaration only
+function init() {
+    playerVelocity = new THREE.Vector3(); // ✅ THREE loaded
+}
+```
+
+#### ✅ FIXED: Undefined difficulty causing NaN constants
+**Issue**: `currentDifficulty = DIFFICULTY[settings.get('difficulty')]` could be `undefined`
+**Impact**: PLAYER_SPEED, GLOBE_SPEED became NaN, game unplayable
+**Fix**: Added fallback to DIFFICULTY.normal
+```javascript
+// Before (BROKEN)
+let currentDifficulty = DIFFICULTY[settings.get('difficulty')]; // Can be undefined
+
+// After (FIXED)
+const currentDifficulty = DIFFICULTY[settings.get('difficulty')] || DIFFICULTY.normal;
+```
+
+#### ✅ FIXED: Missing null checks on DOM elements
+**Issue**: `document.getElementById()` calls without null checks
+**Impact**: Potential crashes if elements missing
+**Fix**: Added null checks throughout with graceful fallbacks
+
+#### ✅ FIXED: game-enhanced.js orphan file
+**Issue**: No HTML file loaded `game-enhanced.js`
+**Impact**: All v2.0 features were inaccessible
+**Fix**: Created new `index.html` that correctly loads `game-enhanced.js`
+
+### 📝 Files Modified
+- `web/game-enhanced.js` - All critical bugs fixed
+- `web/index.html` - Completely rewritten to integrate enhanced version
+- `README.md` - Updated to highlight v2.0.1
+- `CHANGELOG.md` - This entry
+- `web/VERSIONE_2.0_FIXED.md` - Comprehensive bug fix documentation
+
+### 🧪 Testing
+- ✅ No more `THREE is not defined` errors
+- ✅ No more `currentDifficulty is undefined` errors
+- ✅ All features now accessible from index.html
+- ✅ Game fully playable on desktop and mobile
+- ✅ Settings, leaderboard, audio all working
+
+---
+
 ## [2.0.0] - Enhanced Version - 2024
+
+### ⚠️ KNOWN ISSUES (Fixed in 2.0.1)
+- ❌ Critical: THREE.Vector3 initialized before THREE.js loads
+- ❌ Critical: currentDifficulty could be undefined
+- ❌ Critical: game-enhanced.js not loaded by any HTML
+- ❌ Missing null checks on DOM elements
 
 ### 🎉 Major Features Added
 

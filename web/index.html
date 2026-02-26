@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Sky Spheres - Web Demo</title>
+    <title>Sky Spheres - Enhanced Web Game</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -18,10 +19,13 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             overflow: hidden;
             touch-action: none;
+            position: fixed;
+            width: 100%;
+            height: 100%;
         }
 
         #gameCanvas {
-            display: block;
+            display: none;
             width: 100vw;
             height: 100vh;
             touch-action: none;
@@ -36,6 +40,8 @@
             pointer-events: none;
             color: white;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            display: none;
+            z-index: 10;
         }
 
         #topBar {
@@ -61,18 +67,6 @@
             border-radius: 20px;
         }
 
-        #controls {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            text-align: center;
-            background: rgba(0,0,0,0.5);
-            padding: 15px 30px;
-            border-radius: 15px;
-            font-size: 14px;
-        }
-
         #notification {
             position: absolute;
             top: 50%;
@@ -85,6 +79,10 @@
             opacity: 0;
             transition: opacity 0.5s;
             pointer-events: none;
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+            white-space: pre-line;
         }
 
         #notification.show {
@@ -103,7 +101,7 @@
             justify-content: center;
             align-items: center;
             color: white;
-            z-index: 100;
+            z-index: 1000;
         }
 
         #startScreen.hidden {
@@ -129,9 +127,10 @@
             color: #FFD700;
         }
 
-        #startButton {
+        .menu-button {
             font-size: 28px;
             padding: 20px 60px;
+            margin: 10px;
             background: linear-gradient(135deg, #FFD700, #FFA500);
             border: none;
             border-radius: 50px;
@@ -142,13 +141,18 @@
             box-shadow: 0 5px 20px rgba(255, 215, 0, 0.5);
         }
 
-        #startButton:hover {
+        .menu-button:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 30px rgba(255, 215, 0, 0.8);
         }
 
-        #startButton:active {
+        .menu-button:active {
             transform: translateY(0);
+        }
+
+        .menu-button.secondary {
+            background: linear-gradient(135deg, #4a7c59, #2a4c39);
+            color: white;
         }
 
         #instructions {
@@ -167,6 +171,7 @@
             display: none;
             justify-content: space-between;
             pointer-events: auto;
+            z-index: 50;
         }
 
         .joystick {
@@ -176,6 +181,7 @@
             border: 3px solid rgba(255,255,255,0.5);
             border-radius: 50%;
             position: relative;
+            touch-action: none;
         }
 
         .joystick-handle {
@@ -190,26 +196,28 @@
         }
 
         .action-button {
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             background: rgba(255, 215, 0, 0.6);
             border: 3px solid rgba(255, 215, 0, 0.9);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 18px;
             font-weight: bold;
             color: white;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            touch-action: none;
         }
 
         @media (max-width: 768px) {
-            #mobileControls {
-                display: flex;
+            #title {
+                font-size: 48px;
             }
-            #controls {
-                display: none;
+            .menu-button {
+                font-size: 24px;
+                padding: 15px 40px;
             }
         }
     </style>
@@ -218,16 +226,18 @@
     <!-- Start Screen -->
     <div id="startScreen">
         <div id="title">⚡ SKY SPHERES ⚡</div>
-        <div id="subtitle">Mobile Fantasy Sports Game</div>
-        <button id="startButton">INIZIA</button>
+        <div id="subtitle">Enhanced Fantasy Sports Game</div>
+        <button id="startButton" class="menu-button">INIZIA</button>
+        <button onclick="window.gameAPI.toggleSettings()" class="menu-button secondary">⚙️ IMPOSTAZIONI</button>
+        <button onclick="window.showLeaderboard()" class="menu-button secondary">🏆 CLASSIFICA</button>
         <div id="instructions">
             <p><strong>OBIETTIVO:</strong> Insegui e cattura il Radiant Globe dorato!</p>
             <br>
-            <p><strong>CONTROLLI PC:</strong></p>
-            <p>WASD = Movimento | Spazio = Su | Ctrl = Giù | Shift = Boost</p>
-            <br>
             <p><strong>CONTROLLI MOBILE:</strong></p>
-            <p>Swipe = Movimento | Tap Bottone = Boost</p>
+            <p>Joystick = Movimento | Bottone Boost = Velocità</p>
+            <br>
+            <p><strong>FUNZIONALITÀ:</strong></p>
+            <p>🎵 Audio procedurale | ⭐ Particelle | 🏆 Classifica | 📊 Statistiche</p>
         </div>
     </div>
 
@@ -236,9 +246,6 @@
         <div id="topBar">
             <div id="distance">🎯 Distanza: -- m</div>
             <div id="timer">⏱️ 0:00</div>
-        </div>
-        <div id="controls">
-            WASD = Movimento | SPAZIO = Su | CTRL = Giù | SHIFT = Boost
         </div>
     </div>
 
@@ -259,7 +266,27 @@
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-    <!-- Game Script -->
-    <script src="game.js"></script>
+    <!-- Enhanced Game Script -->
+    <script src="game-enhanced.js"></script>
+
+    <!-- Initialize -->
+    <script>
+        // Wait for everything to load, then setup start button
+        window.addEventListener('load', function() {
+            const startButton = document.getElementById('startButton');
+            if (startButton && window.gameAPI && window.gameAPI.startGame) {
+                startButton.addEventListener('click', function() {
+                    window.gameAPI.startGame();
+                });
+            }
+        });
+
+        // Check if Three.js loaded
+        setTimeout(function() {
+            if (typeof THREE === 'undefined') {
+                alert('ATTENZIONE: Three.js non caricato.\n\nServe connessione internet per caricare la libreria 3D.\n\nRicarica la pagina quando sei connesso.');
+            }
+        }, 2000);
+    </script>
 </body>
 </html>

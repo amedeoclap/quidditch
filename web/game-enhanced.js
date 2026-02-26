@@ -301,8 +301,7 @@ class Stats {
 // ===== MAIN GAME =====
 let scene, camera, renderer;
 let player, globe;
-let playerVelocity = new THREE.Vector3();
-let globeVelocity = new THREE.Vector3();
+let playerVelocity, globeVelocity; // Will be initialized in init()
 let gameStarted = false;
 let gameTime = 0;
 let captured = false;
@@ -330,12 +329,8 @@ const DIFFICULTY = {
     hard: { playerSpeed: 0.20, globeSpeed: 0.18, captureDistance: 2.5 }
 };
 
-let currentDifficulty = DIFFICULTY[settings.get('difficulty')];
-
-const PLAYER_SPEED = currentDifficulty.playerSpeed;
-const PLAYER_BOOST = currentDifficulty.playerSpeed * 2;
-const GLOBE_SPEED = currentDifficulty.globeSpeed;
-const CAPTURE_DISTANCE = currentDifficulty.captureDistance;
+// Game constants (will be set based on difficulty)
+let PLAYER_SPEED, PLAYER_BOOST, GLOBE_SPEED, CAPTURE_DISTANCE;
 const BOUNDS = { x: 40, y: 25, z: 40 };
 
 // Tutorial
@@ -359,10 +354,15 @@ function startGame() {
         return;
     }
 
-    document.getElementById('startScreen').classList.add('hidden');
-    document.getElementById('gameCanvas').style.display = 'block';
-    document.getElementById('hud').style.display = 'block';
-    document.getElementById('mobileControls').style.display = 'flex';
+    const startScreen = document.getElementById('startScreen');
+    const gameCanvas = document.getElementById('gameCanvas');
+    const hud = document.getElementById('hud');
+    const mobileControls = document.getElementById('mobileControls');
+
+    if (startScreen) startScreen.classList.add('hidden');
+    if (gameCanvas) gameCanvas.style.display = 'block';
+    if (hud) hud.style.display = 'block';
+    if (mobileControls) mobileControls.style.display = 'flex';
 
     if (tutorialActive) {
         showTutorial();
@@ -375,6 +375,17 @@ function startGame() {
 }
 
 function init() {
+    // Initialize THREE.js dependent variables
+    playerVelocity = new THREE.Vector3();
+    globeVelocity = new THREE.Vector3();
+
+    // Set difficulty constants with fallback
+    const currentDifficulty = DIFFICULTY[settings.get('difficulty')] || DIFFICULTY.normal;
+    PLAYER_SPEED = currentDifficulty.playerSpeed;
+    PLAYER_BOOST = currentDifficulty.playerSpeed * 2;
+    GLOBE_SPEED = currentDifficulty.globeSpeed;
+    CAPTURE_DISTANCE = currentDifficulty.captureDistance;
+
     // Scene
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87CEEB);
@@ -469,8 +480,18 @@ function init() {
 
 function setupControls() {
     const joystick = document.getElementById('joystick');
-    const handle = joystick.querySelector('.joystick-handle');
     const boostButton = document.getElementById('boostButton');
+
+    if (!joystick || !boostButton) {
+        console.warn('Mobile controls not found');
+        return;
+    }
+
+    const handle = joystick.querySelector('.joystick-handle');
+    if (!handle) {
+        console.warn('Joystick handle not found');
+        return;
+    }
 
     joystick.addEventListener('touchstart', (e) => {
         e.preventDefault();
@@ -625,12 +646,20 @@ function updateCamera() {
 }
 
 function updateHUD() {
+    if (!player || !globe) return;
+
     const distance = player.position.distanceTo(globe.position);
-    document.getElementById('distance').textContent = `🎯 ${distance.toFixed(1)}m`;
+    const distanceEl = document.getElementById('distance');
+    if (distanceEl) {
+        distanceEl.textContent = `🎯 ${distance.toFixed(1)}m`;
+    }
 
     const minutes = Math.floor(gameTime / 60);
     const seconds = Math.floor(gameTime % 60);
-    document.getElementById('timer').textContent = `⏱️ ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    const timerEl = document.getElementById('timer');
+    if (timerEl) {
+        timerEl.textContent = `⏱️ ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
 }
 
 function checkCapture() {

@@ -4,22 +4,35 @@ Un videogioco mobile fantasy basato su sport aereo con meccaniche innovative isp
 
 ## 🎮 **GIOCA SUBITO NEL BROWSER!** ⚡
 
-**Versione WebGL giocabile - Non serve Unity, non serve installare niente!**
+**🆕 Versione 2.0.1 CORRETTA E FUNZIONANTE - Tutti i bug risolti!**
 
-### Quick Play (5 secondi):
+### ✅ Quick Play (5 secondi):
 
 1. Vai nella cartella **`web/`**
 2. **Doppio click su `index.html`**
 3. Click su **"INIZIA"**
 4. **GIOCA!** 🎮
 
+**Nuove Funzionalità v2.0:**
+- 🎵 **Audio procedurale** (musica + effetti sonori)
+- ⭐ **Sistema particelle** (esplosioni e trail)
+- 🏆 **Classifica** (top 10 tempi salvati)
+- ⚙️ **Impostazioni** (volume, difficoltà, grafica)
+- 📊 **Statistiche** (partite, catture, distanza)
+- 📚 **Tutorial** interattivo
+- 🎨 **3 Difficoltà** (Easy, Normal, Hard)
+
 **Controlli**:
-- **PC**: WASD + Spazio/Ctrl + Shift (boost)
 - **Mobile**: Joystick touch + Bottone boost
+- **PC**: WASD + Spazio/Ctrl + Shift (boost)
 
 **Obiettivo**: Insegui e cattura il Radiant Globe dorato nel minor tempo!
 
-👉 **[Guida completa versione Web →](web/README.md)**
+### 📖 Documentazione
+
+- 👉 **[VERSIONE 2.0.1 - Bug Fix & Features →](web/VERSIONE_2.0_FIXED.md)** ⭐ NUOVO!
+- 📱 **[Guida Android →](ANDROID_GUIDE.md)**
+- 🌐 **[Guida completa versione Web →](web/README.md)**
 
 ---
 
