@@ -4,16 +4,42 @@ Un videogioco mobile fantasy basato su sport aereo con meccaniche innovative isp
 
 ## 🎮 **GIOCA SUBITO NEL BROWSER!** ⚡
 
-**🆕 Versione 2.0.1 CORRETTA E FUNZIONANTE - Tutti i bug risolti!**
+**🆕 VERSIONE 3.0 COMPLETA - Con Destiny Hood, 4 Ruoli, AI Players, Squadre!**
 
-### ✅ Quick Play (5 secondi):
+### 🎩 Versione Completa (CONSIGLIATA) ⭐
+
+**Tutte le feature originali richieste!**
+
+1. Vai nella cartella **`web/`**
+2. **Doppio click su `index-complete.html`**
+3. **Destiny Hood Ceremony** 🎩
+4. **Scegli il tuo ruolo** (Seeker/Beater/Chaser/Keeper)
+5. **GIOCA con 7 AI** in 2 squadre!
+
+**Novità Versione Completa:**
+- 🎩 **Destiny Hood** - Cerimonia di sorting all'inizio
+- ⚔️ **4 Ruoli giocabili** (Seeker, Beater, Chaser, Keeper)
+- 👥 **7 AI Players** - Gioca in squadre 4v4
+- 🏟️ **Arena completa** - Piattaforme, anelli, pilastri
+- 🎯 **Score Orbs** - Segna goal (Chaser)
+- ⚔️ **Strike Spheres** - Colpisci sfere (Beater)
+- 🏆 **Sistema squadre** - Storm ⚡ vs Flame 🔥
+- 📊 **Punteggi team** - Competizione vera
+
+👉 **[Guida Completa Versione 3.0 →](web/COMPLETE_GAME.md)** ⭐ LEGGI QUESTA!
+
+---
+
+### ✨ Versione Enhanced (Alternativa)
+
+**Versione semplificata senza AI, solo chase del Globe:**
 
 1. Vai nella cartella **`web/`**
 2. **Doppio click su `index.html`**
 3. Click su **"INIZIA"**
 4. **GIOCA!** 🎮
 
-**Nuove Funzionalità v2.0:**
+**Funzionalità v2.0:**
 - 🎵 **Audio procedurale** (musica + effetti sonori)
 - ⭐ **Sistema particelle** (esplosioni e trail)
 - 🏆 **Classifica** (top 10 tempi salvati)
@@ -22,15 +48,19 @@ Un videogioco mobile fantasy basato su sport aereo con meccaniche innovative isp
 - 📚 **Tutorial** interattivo
 - 🎨 **3 Difficoltà** (Easy, Normal, Hard)
 
+---
+
 **Controlli**:
 - **Mobile**: Joystick touch + Bottone boost
 - **PC**: WASD + Spazio/Ctrl + Shift (boost)
 
-**Obiettivo**: Insegui e cattura il Radiant Globe dorato nel minor tempo!
+**Obiettivo Completo**: Lavora con la tua squadra AI, gioca il tuo ruolo, vinci la partita!
+**Obiettivo Enhanced**: Insegui e cattura il Radiant Globe dorato nel minor tempo!
 
 ### 📖 Documentazione
 
-- 👉 **[VERSIONE 2.0.1 - Bug Fix & Features →](web/VERSIONE_2.0_FIXED.md)** ⭐ NUOVO!
+- 🎮 **[VERSIONE COMPLETA 3.0 - Guida →](web/COMPLETE_GAME.md)** ⭐ NUOVO!
+- 🔧 **[VERSIONE 2.0.1 - Bug Fix & Features →](web/VERSIONE_2.0_FIXED.md)**
 - 📱 **[Guida Android →](ANDROID_GUIDE.md)**
 - 🌐 **[Guida completa versione Web →](web/README.md)**
 
