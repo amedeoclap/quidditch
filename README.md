@@ -4,65 +4,75 @@ Un videogioco mobile fantasy basato su sport aereo con meccaniche innovative isp
 
 ## 🎮 **GIOCA SUBITO NEL BROWSER!** ⚡
 
-**🆕 VERSIONE 3.0 COMPLETA - Con Destiny Hood, 4 Ruoli, AI Players, Squadre!**
+**🆕 VERSIONE 3.1 IMPROVED - Controlli Mobile + AI Attiva + Giocatori Animati!**
 
-### 🎩 Versione Completa (CONSIGLIATA) ⭐
+### 🔥 v3.1 Improved (CONSIGLIATA) ⭐⭐⭐
 
-**Tutte le feature originali richieste!**
+**TUTTI I PROBLEMI RISOLTI!**
+
+1. Vai nella cartella **`web/`**
+2. **Doppio click su `index-improved.html`**
+3. **Destiny Hood Ceremony** 🎩
+4. **Scegli il tuo ruolo** (Seeker/Beater/Chaser/Keeper)
+5. **GIOCA con controlli mobile completi!**
+
+**✅ NOVITÀ v3.1:**
+- 🎮 **Controlli mobile completi**: Joystick + Pulsanti Su/Giù + Boost
+- 🤖 **AI che gioca DAVVERO**: Cattura globe, segna goal, colpisce sfere
+- 👨 **Giocatori stilizzati**: Omini animati con testa/corpo/braccia/gambe
+- ⚡ **Animazioni**: Braccia e gambe si muovono durante il movimento
+- 📱 **Layout ottimizzato**: Perfetto per pollici su smartphone
+- 🎯 **Notifiche real-time**: Vedi quando AI cattura/segna
+
+**Feature Complete:**
+- 🎩 Destiny Hood ceremony
+- ⚔️ 4 Ruoli giocabili
+- 👥 7 AI Players attivi
+- 🏟️ Arena completa
+- 🏆 Sistema squadre (Storm ⚡ vs Flame 🔥)
+
+👉 **[Guida v3.1 IMPROVED →](web/IMPROVED_v3.1.md)** ⭐ LEGGI QUESTA!
+
+---
+
+### 🎩 v3.0 Complete (Alternativa)
+
+**Versione precedente con AI base:**
 
 1. Vai nella cartella **`web/`**
 2. **Doppio click su `index-complete.html`**
-3. **Destiny Hood Ceremony** 🎩
-4. **Scegli il tuo ruolo** (Seeker/Beater/Chaser/Keeper)
-5. **GIOCA con 7 AI** in 2 squadre!
 
-**Novità Versione Completa:**
-- 🎩 **Destiny Hood** - Cerimonia di sorting all'inizio
-- ⚔️ **4 Ruoli giocabili** (Seeker, Beater, Chaser, Keeper)
-- 👥 **7 AI Players** - Gioca in squadre 4v4
-- 🏟️ **Arena completa** - Piattaforme, anelli, pilastri
-- 🎯 **Score Orbs** - Segna goal (Chaser)
-- ⚔️ **Strike Spheres** - Colpisci sfere (Beater)
-- 🏆 **Sistema squadre** - Storm ⚡ vs Flame 🔥
-- 📊 **Punteggi team** - Competizione vera
+⚠️ Nota: AI si muove ma non interagisce, controlli mobile limitati
 
-👉 **[Guida Completa Versione 3.0 →](web/COMPLETE_GAME.md)** ⭐ LEGGI QUESTA!
+👉 **[Guida v3.0 →](web/COMPLETE_GAME.md)**
 
 ---
 
-### ✨ Versione Enhanced (Alternativa)
+### ✨ v2.0 Enhanced (Alternativa Base)
 
-**Versione semplificata senza AI, solo chase del Globe:**
+**Versione semplificata senza AI:**
 
 1. Vai nella cartella **`web/`**
 2. **Doppio click su `index.html`**
-3. Click su **"INIZIA"**
-4. **GIOCA!** 🎮
 
-**Funzionalità v2.0:**
-- 🎵 **Audio procedurale** (musica + effetti sonori)
-- ⭐ **Sistema particelle** (esplosioni e trail)
-- 🏆 **Classifica** (top 10 tempi salvati)
-- ⚙️ **Impostazioni** (volume, difficoltà, grafica)
-- 📊 **Statistiche** (partite, catture, distanza)
-- 📚 **Tutorial** interattivo
-- 🎨 **3 Difficoltà** (Easy, Normal, Hard)
+Funzionalità: Audio, Particelle, Classifica, Settings
+
+👉 **[Guida v2.0 →](web/VERSIONE_2.0_FIXED.md)**
 
 ---
 
-**Controlli**:
-- **Mobile**: Joystick touch + Bottone boost
-- **PC**: WASD + Spazio/Ctrl + Shift (boost)
+**Controlli v3.1**:
+- **Mobile**: Joystick (X/Z) + ▲▼ (Y) + Boost ⚡
+- **PC**: WASD + Spazio/Ctrl + Shift
 
-**Obiettivo Completo**: Lavora con la tua squadra AI, gioca il tuo ruolo, vinci la partita!
-**Obiettivo Enhanced**: Insegui e cattura il Radiant Globe dorato nel minor tempo!
+**Obiettivo**: Gioca il tuo ruolo, lavora con AI, vinci la partita!
 
 ### 📖 Documentazione
 
-- 🎮 **[VERSIONE COMPLETA 3.0 - Guida →](web/COMPLETE_GAME.md)** ⭐ NUOVO!
-- 🔧 **[VERSIONE 2.0.1 - Bug Fix & Features →](web/VERSIONE_2.0_FIXED.md)**
+- 🔥 **[VERSIONE 3.1 IMPROVED - Guida →](web/IMPROVED_v3.1.md)** ⭐ **NUOVA!**
+- 🎮 **[VERSIONE 3.0 Complete - Guida →](web/COMPLETE_GAME.md)**
+- 🔧 **[VERSIONE 2.0.1 - Bug Fix →](web/VERSIONE_2.0_FIXED.md)**
 - 📱 **[Guida Android →](ANDROID_GUIDE.md)**
-- 🌐 **[Guida completa versione Web →](web/README.md)**
 
 ---
 
