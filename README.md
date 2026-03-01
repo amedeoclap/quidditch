@@ -4,34 +4,48 @@ Un videogioco mobile fantasy basato su sport aereo con meccaniche innovative isp
 
 ## 🎮 **GIOCA SUBITO NEL BROWSER!** ⚡
 
-**🆕 VERSIONE 3.1 IMPROVED - Controlli Mobile + AI Attiva + Giocatori Animati!**
+**🆕 VERSIONE 3.2 QUIDDITCH - VERO QUIDDITCH DA HARRY POTTER!** 🧙‍♂️
 
-### 🔥 v3.1 Improved (CONSIGLIATA) ⭐⭐⭐
+### 🔥 v3.2 True Quidditch (CONSIGLIATA) ⭐⭐⭐⭐⭐
 
-**TUTTI I PROBLEMI RISOLTI!**
+**MECCANICHE AUTENTICHE DA HARRY POTTER!**
+
+1. Vai nella cartella **`web/`**
+2. **Doppio click su `index-quidditch.html`**
+3. **Destiny Hood Ceremony** 🎩
+4. **Scegli il tuo ruolo** (Seeker/Beater/Chaser/Keeper)
+5. **GIOCA con le VERE regole del Quidditch!**
+
+**✅ NOVITÀ v3.2 - TRUE QUIDDITCH:**
+- 💥 **Bludger AGGRESSIVI**: Inseguono e stordiscono giocatori per 3 secondi!
+- ⚔️ **Beater colpisce Bludger**: Reindirizza verso avversari (non solo butta via)
+- 🏈 **Chaser ruba Quaffle**: Placcaggio e furto palla realistico
+- 🛡️ **Keeper blocca fisicamente**: Intercetta e respinge tiri
+- 😵 **Sistema Stun**: 3 secondi di stordimento con animazione spin
+- 🏆 **Cattura Snitch = Game Over**: +150 punti e vittoria immediata!
+- 👥 **Team 7v7 corretto**: 1 Seeker, 2 Beaters, 3 Chasers, 1 Keeper per squadra
+
+**Direttamente dai Libri:**
+- Bludger che scelgono bersagli e attaccano attivamente
+- Beater deve colpire Bludger verso nemici, non eliminarli
+- Chaser può rubare Quaffle con contrasti fisici
+- Keeper difende area goal con corpo
+
+👉 **[Guida v3.2 QUIDDITCH →](web/QUIDDITCH_v3.2.md)** ⭐ **LEGGI QUESTA!**
+
+---
+
+### 🎮 v3.1 Improved (Alternativa)
+
+**Versione precedente con AI attiva ma meccaniche semplificate:**
 
 1. Vai nella cartella **`web/`**
 2. **Doppio click su `index-improved.html`**
-3. **Destiny Hood Ceremony** 🎩
-4. **Scegli il tuo ruolo** (Seeker/Beater/Chaser/Keeper)
-5. **GIOCA con controlli mobile completi!**
 
-**✅ NOVITÀ v3.1:**
-- 🎮 **Controlli mobile completi**: Joystick + Pulsanti Su/Giù + Boost
-- 🤖 **AI che gioca DAVVERO**: Cattura globe, segna goal, colpisce sfere
-- 👨 **Giocatori stilizzati**: Omini animati con testa/corpo/braccia/gambe
-- ⚡ **Animazioni**: Braccia e gambe si muovono durante il movimento
-- 📱 **Layout ottimizzato**: Perfetto per pollici su smartphone
-- 🎯 **Notifiche real-time**: Vedi quando AI cattura/segna
+✅ Controlli mobile completi, AI gioca, giocatori animati
+⚠️ Meccaniche Quidditch semplificate (Bludger non aggressivi)
 
-**Feature Complete:**
-- 🎩 Destiny Hood ceremony
-- ⚔️ 4 Ruoli giocabili
-- 👥 7 AI Players attivi
-- 🏟️ Arena completa
-- 🏆 Sistema squadre (Storm ⚡ vs Flame 🔥)
-
-👉 **[Guida v3.1 IMPROVED →](web/IMPROVED_v3.1.md)** ⭐ LEGGI QUESTA!
+👉 **[Guida v3.1 IMPROVED →](web/IMPROVED_v3.1.md)**
 
 ---
 
@@ -61,15 +75,16 @@ Funzionalità: Audio, Particelle, Classifica, Settings
 
 ---
 
-**Controlli v3.1**:
+**Controlli (v3.1 e v3.2)**:
 - **Mobile**: Joystick (X/Z) + ▲▼ (Y) + Boost ⚡
 - **PC**: WASD + Spazio/Ctrl + Shift
 
-**Obiettivo**: Gioca il tuo ruolo, lavora con AI, vinci la partita!
+**Obiettivo**: Gioca il tuo ruolo, lavora con AI, segui le regole del Quidditch!
 
 ### 📖 Documentazione
 
-- 🔥 **[VERSIONE 3.1 IMPROVED - Guida →](web/IMPROVED_v3.1.md)** ⭐ **NUOVA!**
+- 🧙‍♂️ **[VERSIONE 3.2 QUIDDITCH - Guida →](web/QUIDDITCH_v3.2.md)** ⭐⭐⭐ **CONSIGLIATA!**
+- 🔥 **[VERSIONE 3.1 IMPROVED - Guida →](web/IMPROVED_v3.1.md)**
 - 🎮 **[VERSIONE 3.0 Complete - Guida →](web/COMPLETE_GAME.md)**
 - 🔧 **[VERSIONE 2.0.1 - Bug Fix →](web/VERSIONE_2.0_FIXED.md)**
 - 📱 **[Guida Android →](ANDROID_GUIDE.md)**
