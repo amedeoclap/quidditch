@@ -425,14 +425,14 @@ class AIPlayer {
         const snitch = gameState.snitch.mesh;
         const dist = this.mesh.position.distanceTo(snitch.position);
 
-        // Try to capture
-        if (dist < 2.5 && this.actionCooldown === 0) {
+        // Try to capture - MOLTO DIFFICILE (deve essere vicinissimo)
+        if (dist < 1.2 && this.actionCooldown === 0) {
             this.captureSnitch(gameState);
             return;
         }
 
-        // Chase with boost when close
-        const speed = dist < 15 ? 0.28 : 0.18;
+        // Chase - RALLENTATO per dare tempo al giocatore
+        const speed = dist < 15 ? 0.15 : 0.10;
         const dir = new THREE.Vector3()
             .subVectors(snitch.position, this.mesh.position)
             .normalize();
@@ -685,6 +685,12 @@ let joystickActive = false;
 let joystickDirection = { x: 0, y: 0 };
 let isBoosting = false;
 let verticalInput = 0;
+
+// Keyboard controls
+let keysPressed = {
+    w: false, a: false, s: false, d: false,
+    space: false, shift: false, ctrl: false
+};
 
 let destinyHood = new DestinyHood();
 const BOUNDS = { x: 40, y: 25, z: 40 };
@@ -1022,6 +1028,31 @@ function setupControls() {
             downButton.style.transform = 'scale(1)';
         });
     }
+
+    // Keyboard controls
+    window.addEventListener('keydown', (e) => {
+        switch(e.key.toLowerCase()) {
+            case 'w': keysPressed.w = true; break;
+            case 'a': keysPressed.a = true; break;
+            case 's': keysPressed.s = true; break;
+            case 'd': keysPressed.d = true; break;
+            case ' ': keysPressed.space = true; isBoosting = true; e.preventDefault(); break;
+            case 'shift': keysPressed.shift = true; isBoosting = true; break;
+            case 'control': keysPressed.ctrl = true; break;
+        }
+    });
+
+    window.addEventListener('keyup', (e) => {
+        switch(e.key.toLowerCase()) {
+            case 'w': keysPressed.w = false; break;
+            case 'a': keysPressed.a = false; break;
+            case 's': keysPressed.s = false; break;
+            case 'd': keysPressed.d = false; break;
+            case ' ': keysPressed.space = false; isBoosting = false; break;
+            case 'shift': keysPressed.shift = false; isBoosting = false; break;
+            case 'control': keysPressed.ctrl = false; break;
+        }
+    });
 }
 
 function updatePlayer(delta) {
@@ -1041,11 +1072,25 @@ function updatePlayer(delta) {
 
     const speed = isBoosting ? 0.35 : 0.2;
 
+    // Joystick controls
     if (joystickActive) {
         playerVelocity.x += joystickDirection.x * speed;
         playerVelocity.z += joystickDirection.y * speed;
     }
 
+    // Keyboard controls (WASD)
+    if (keysPressed.a) playerVelocity.x -= speed;
+    if (keysPressed.d) playerVelocity.x += speed;
+    if (keysPressed.w) playerVelocity.z -= speed;
+    if (keysPressed.s) playerVelocity.z += speed;
+
+    // Vertical controls (Space/Ctrl or buttons)
+    if (keysPressed.space) {
+        playerVelocity.y += speed * 0.7;
+    }
+    if (keysPressed.ctrl) {
+        playerVelocity.y -= speed * 0.7;
+    }
     if (verticalInput !== 0) {
         playerVelocity.y += verticalInput * speed * 0.7;
     }
@@ -1083,7 +1128,7 @@ function updateSnitch(delta) {
     snitchVelocity.y += Math.cos(time * 0.5) * 0.005;
     snitchVelocity.z += Math.sin(time * 0.9) * 0.01;
 
-    // Evade all seekers
+    // Evade all seekers - MOLTO AGILE!
     const allPlayers = [
         { mesh: player, role: playerRole, team: playerTeam, state: playerState },
         ...aiPlayers
@@ -1093,18 +1138,22 @@ function updateSnitch(delta) {
 
     seekers.forEach(seeker => {
         const dist = snitch.mesh.position.distanceTo(seeker.mesh.position);
-        if (dist < 18) {
+        // Detect seekers from further away (25 invece di 18)
+        if (dist < 25) {
             const evasion = new THREE.Vector3()
                 .subVectors(snitch.mesh.position, seeker.mesh.position)
                 .normalize();
-            snitchVelocity.add(evasion.multiplyScalar(0.02));
+            // Evasion più forte quando molto vicino
+            const evasionForce = dist < 10 ? 0.05 : 0.03;
+            snitchVelocity.add(evasion.multiplyScalar(evasionForce));
         }
     });
 
     snitch.mesh.position.add(snitchVelocity);
 
-    if (snitchVelocity.length() > 0.3) {
-        snitchVelocity.normalize().multiplyScalar(0.3);
+    // Max speed aumentata per renderlo più veloce
+    if (snitchVelocity.length() > 0.4) {
+        snitchVelocity.normalize().multiplyScalar(0.4);
     }
 
     ['x', 'y', 'z'].forEach(axis => {
