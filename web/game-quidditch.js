@@ -685,11 +685,13 @@ let joystickActive = false;
 let joystickDirection = { x: 0, y: 0 };
 let isBoosting = false;
 let verticalInput = 0;
+let actionPressed = false; // Pulsante AZIONE per Beater/Keeper/Chaser
 
 // Keyboard controls
 let keysPressed = {
     w: false, a: false, s: false, d: false,
-    space: false, shift: false, ctrl: false
+    space: false, shift: false, ctrl: false,
+    e: false // Tasto AZIONE
 };
 
 let destinyHood = new DestinyHood();
@@ -911,9 +913,9 @@ function createAIPlayers() {
         keeper: 1
     };
 
-    // Player team - fill missing roles
+    // Player team - fill missing roles (ESCLUDE il ruolo del giocatore)
     const playerTeamNeeds = { ...teamRoles };
-    playerTeamNeeds[playerRole]--;
+    playerTeamNeeds[playerRole]--; // Toglie 1 perché il giocatore riempie quel ruolo
 
     Object.keys(playerTeamNeeds).forEach(role => {
         for (let i = 0; i < playerTeamNeeds[role]; i++) {
@@ -921,13 +923,20 @@ function createAIPlayers() {
         }
     });
 
-    // Opponent team - all roles
+    // Opponent team - all roles (squadra completa)
     const opponentTeam = playerTeam === Team.STORM ? Team.FLAME : Team.STORM;
     Object.keys(teamRoles).forEach(role => {
         for (let i = 0; i < teamRoles[role]; i++) {
             aiPlayers.push(new AIPlayer(`ai_${opponentTeam}_${role}_${i}`, role, opponentTeam, scene));
         }
     });
+
+    // DEBUG: Verifica composizione squadre
+    console.log(`PLAYER: ${playerRole.toUpperCase()} - Team ${playerTeam.toUpperCase()}`);
+    console.log(`Team ${playerTeam.toUpperCase()}:`,
+        aiPlayers.filter(ai => ai.team === playerTeam).map(ai => ai.role));
+    console.log(`Team ${opponentTeam.toUpperCase()}:`,
+        aiPlayers.filter(ai => ai.team === opponentTeam).map(ai => ai.role));
 }
 
 function createGoalRings() {
@@ -955,6 +964,7 @@ function createGoalRings() {
 function setupControls() {
     const joystick = document.getElementById('joystick');
     const boostButton = document.getElementById('boostButton');
+    const actionButton = document.getElementById('actionButton');
     const upButton = document.getElementById('upButton');
     const downButton = document.getElementById('downButton');
 
@@ -1005,6 +1015,20 @@ function setupControls() {
         boostButton.style.transform = 'scale(1)';
     });
 
+    // Action button (for Beater, Keeper, Chaser actions)
+    if (actionButton) {
+        actionButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            actionPressed = true;
+            actionButton.style.transform = 'scale(0.9)';
+        });
+
+        actionButton.addEventListener('touchend', () => {
+            actionPressed = false;
+            actionButton.style.transform = 'scale(1)';
+        });
+    }
+
     if (upButton) {
         upButton.addEventListener('touchstart', (e) => {
             e.preventDefault();
@@ -1039,6 +1063,7 @@ function setupControls() {
             case ' ': keysPressed.space = true; isBoosting = true; e.preventDefault(); break;
             case 'shift': keysPressed.shift = true; isBoosting = true; break;
             case 'control': keysPressed.ctrl = true; break;
+            case 'e': keysPressed.e = true; actionPressed = true; e.preventDefault(); break;
         }
     });
 
@@ -1051,6 +1076,7 @@ function setupControls() {
             case ' ': keysPressed.space = false; isBoosting = false; break;
             case 'shift': keysPressed.shift = false; isBoosting = false; break;
             case 'control': keysPressed.ctrl = false; break;
+            case 'e': keysPressed.e = false; actionPressed = false; break;
         }
     });
 }
@@ -1070,7 +1096,8 @@ function updatePlayer(delta) {
         return;
     }
 
-    const speed = isBoosting ? 0.35 : 0.2;
+    // VELOCITÀ AUMENTATA per controlli più fluidi
+    const speed = isBoosting ? 0.5 : 0.3;
 
     // Joystick controls
     if (joystickActive) {
@@ -1086,17 +1113,18 @@ function updatePlayer(delta) {
 
     // Vertical controls (Space/Ctrl or buttons)
     if (keysPressed.space) {
-        playerVelocity.y += speed * 0.7;
+        playerVelocity.y += speed * 0.8;
     }
     if (keysPressed.ctrl) {
-        playerVelocity.y -= speed * 0.7;
+        playerVelocity.y -= speed * 0.8;
     }
     if (verticalInput !== 0) {
-        playerVelocity.y += verticalInput * speed * 0.7;
+        playerVelocity.y += verticalInput * speed * 0.8;
     }
 
     player.position.add(playerVelocity);
-    playerVelocity.multiplyScalar(0.85);
+    // DAMPING RIDOTTO per movimento più fluido (0.85 → 0.88)
+    playerVelocity.multiplyScalar(0.88);
 
     player.position.x = Math.max(-BOUNDS.x, Math.min(BOUNDS.x, player.position.x));
     player.position.y = Math.max(2, Math.min(BOUNDS.y, player.position.y));
@@ -1318,11 +1346,11 @@ function checkPlayerActions() {
         }
     }
 
-    // BEATER: hit bludgers
-    if (playerRole === PlayerRole.BEATER && bludgers.length > 0) {
+    // BEATER: hit bludgers (MANUALE con tasto E o pulsante)
+    if (playerRole === PlayerRole.BEATER && bludgers.length > 0 && actionPressed) {
         bludgers.forEach(bludger => {
             const dist = player.position.distanceTo(bludger.mesh.position);
-            if (dist < 2) {
+            if (dist < 3.5) { // Raggio aumentato per facilitare
                 // Find nearest opponent
                 const opponents = aiPlayers.filter(ai => ai.team !== playerTeam && ai.state !== PlayerState.STUNNED);
                 if (opponents.length > 0) {
@@ -1339,6 +1367,7 @@ function checkPlayerActions() {
 
                     bludger.redirectToTarget(nearest.mesh.position);
                     showNotification(`⚔️ HAI COLPITO IL BLUDGER!`);
+                    actionPressed = false; // Prevent spam
                 }
             }
         });
