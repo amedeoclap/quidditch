@@ -438,14 +438,12 @@ class AIPlayer {
         const snitch = gameState.snitch.mesh;
         const dist = this.mesh.position.distanceTo(snitch.position);
 
-        // Try to capture - MOLTO DIFFICILE (deve essere vicinissimo)
-        if (dist < 1.2 && this.actionCooldown === 0) {
+        if (gameState.gameTime >= SNITCH_UNLOCK_TIME && dist < AI_SNITCH_CAPTURE_DISTANCE && this.actionCooldown === 0) {
             this.captureSnitch(gameState);
             return;
         }
 
-        // Chase - RALLENTATO per dare tempo al giocatore
-        const speed = dist < 15 ? 0.15 : 0.10;
+        const speed = dist < 15 ? AI_SEEKER_SPEED_NEAR : AI_SEEKER_SPEED_FAR;
         const dir = new THREE.Vector3()
             .subVectors(snitch.position, this.mesh.position)
             .normalize();
@@ -712,6 +710,13 @@ let keysPressed = {
 
 let destinyHood = new DestinyHood();
 const BOUNDS = { x: 40, y: 25, z: 40 };
+const SNITCH_UNLOCK_TIME = 45;
+const PLAYER_BASE_SPEED = 0.18;
+const PLAYER_BOOST_SPEED = 0.32;
+const SNITCH_CAPTURE_DISTANCE = 2.0;
+const AI_SNITCH_CAPTURE_DISTANCE = 0.85;
+const AI_SEEKER_SPEED_FAR = 0.045;
+const AI_SEEKER_SPEED_NEAR = 0.07;
 
 // ===== API =====
 window.gameAPI = {
@@ -922,7 +927,7 @@ function createSnitch() {
     });
 
     snitch = { mesh: new THREE.Mesh(geometry, material) };
-    snitch.mesh.position.set(15, 15, 15);
+    snitch.mesh.position.set(26, 18, 26);
     snitch.mesh.castShadow = true;
     scene.add(snitch.mesh);
 
@@ -930,9 +935,9 @@ function createSnitch() {
     snitch.mesh.add(light);
 
     snitchVelocity.set(
-        (Math.random() - 0.5) * 0.15,
-        (Math.random() - 0.5) * 0.08,
-        (Math.random() - 0.5) * 0.15
+        (Math.random() - 0.5) * 0.06,
+        (Math.random() - 0.5) * 0.03,
+        (Math.random() - 0.5) * 0.06
     );
 }
 
@@ -1188,8 +1193,7 @@ function updatePlayer(delta) {
         return;
     }
 
-    // VELOCITÀ AUMENTATA per controlli più fluidi
-    const speed = isBoosting ? 0.5 : 0.3;
+    const speed = isBoosting ? PLAYER_BOOST_SPEED : PLAYER_BASE_SPEED;
 
     // Joystick controls
     if (joystickActive) {
@@ -1215,8 +1219,7 @@ function updatePlayer(delta) {
     }
 
     player.position.add(playerVelocity);
-    // DAMPING RIDOTTO per movimento più fluido (0.85 → 0.88)
-    playerVelocity.multiplyScalar(0.88);
+    playerVelocity.multiplyScalar(0.82);
 
     player.position.x = Math.max(-BOUNDS.x, Math.min(BOUNDS.x, player.position.x));
     player.position.y = Math.max(2, Math.min(BOUNDS.y, player.position.y));
@@ -1244,9 +1247,9 @@ function updateSnitch(delta) {
 
     const time = Date.now() * 0.001;
 
-    snitchVelocity.x += Math.sin(time * 0.7) * 0.01;
-    snitchVelocity.y += Math.cos(time * 0.5) * 0.005;
-    snitchVelocity.z += Math.sin(time * 0.9) * 0.01;
+    snitchVelocity.x += Math.sin(time * 0.7) * 0.004;
+    snitchVelocity.y += Math.cos(time * 0.5) * 0.002;
+    snitchVelocity.z += Math.sin(time * 0.9) * 0.004;
 
     // Evade all seekers - MOLTO AGILE!
     const allPlayers = [
@@ -1258,22 +1261,19 @@ function updateSnitch(delta) {
 
     seekers.forEach(seeker => {
         const dist = snitch.mesh.position.distanceTo(seeker.mesh.position);
-        // Detect seekers from further away (25 invece di 18)
-        if (dist < 25) {
+        if (dist < 18) {
             const evasion = new THREE.Vector3()
                 .subVectors(snitch.mesh.position, seeker.mesh.position)
                 .normalize();
-            // Evasion più forte quando molto vicino
-            const evasionForce = dist < 10 ? 0.05 : 0.03;
+            const evasionForce = dist < 8 ? 0.025 : 0.012;
             snitchVelocity.add(evasion.multiplyScalar(evasionForce));
         }
     });
 
     snitch.mesh.position.add(snitchVelocity);
 
-    // Max speed aumentata per renderlo più veloce
-    if (snitchVelocity.length() > 0.4) {
-        snitchVelocity.normalize().multiplyScalar(0.4);
+    if (snitchVelocity.length() > 0.18) {
+        snitchVelocity.normalize().multiplyScalar(0.18);
     }
 
     ['x', 'y', 'z'].forEach(axis => {
@@ -1304,7 +1304,8 @@ function updateAI(delta) {
         bludgers: bludgers,
         goalRings: goalRings,
         teamScores: teamScores,
-        allPlayers: allPlayers
+        allPlayers: allPlayers,
+        gameTime: gameTime
     };
 
     aiPlayers.forEach(ai => ai.update(delta, gameState));
@@ -1383,6 +1384,16 @@ function updateHUD() {
 
     const scoreEl = document.getElementById('teamScores');
     if (scoreEl) scoreEl.textContent = `⚡ Storm: ${teamScores.storm} | 🔥 Flame: ${teamScores.flame}`;
+
+    const hintEl = document.getElementById('objectiveHint');
+    if (hintEl && playerRole === PlayerRole.SEEKER) {
+        const remaining = Math.ceil(SNITCH_UNLOCK_TIME - gameTime);
+        if (remaining > 0) {
+            hintEl.innerHTML = `🎯 SEEKER: scalda i motori. Il Boccino sara' catturabile tra <span class="obj-action">${remaining}s</span>.`;
+        } else {
+            hintEl.innerHTML = `🎯 SEEKER: avvicinati al <b>Boccino d'Oro</b> e premi <span class="obj-action">E / AZIONE</span> per vincere!`;
+        }
+    }
 }
 
 function updateRoleDisplay() {
@@ -1398,7 +1409,7 @@ function updateRoleDisplay() {
     const hintEl = document.getElementById('objectiveHint');
     if (hintEl && playerRole) {
         const objectives = {
-            seeker: `🎯 SEEKER: insegui e tocca il <b>Boccino d'Oro</b> per vincere la partita! (+150 pt)`,
+            seeker: `🎯 SEEKER: dopo il countdown, avvicinati al <b>Boccino d'Oro</b> e premi <span class="obj-action">E / AZIONE</span> per vincere! (+150 pt)`,
             beater: `⚔️ BEATER: avvicinati a un <b>Bludger</b> e premi <span class="obj-action">E / AZIONE</span> per scagliarlo contro un avversario!`,
             chaser: `🏈 CHASER: prendi la <b>Quaffle</b> e portala negli anelli avversari per segnare (+10 pt). Premi <span class="obj-action">E / AZIONE</span> per rubarla!`,
             keeper: `🛡️ KEEPER: resta vicino ai tuoi anelli e premi <span class="obj-action">E / AZIONE</span> per bloccare i tiri avversari!`
@@ -1418,10 +1429,14 @@ function checkPlayerActions() {
     // SEEKER: capture snitch (guardia gameEnded evita game-over multipli)
     if (playerRole === PlayerRole.SEEKER && snitch && snitch.mesh) {
         const dist = player.position.distanceTo(snitch.mesh.position);
-        if (dist < 2.5) {
+        if (gameTime < SNITCH_UNLOCK_TIME) {
+            return;
+        }
+        if (dist < SNITCH_CAPTURE_DISTANCE && actionPressed) {
             gameEnded = true;
             teamScores[playerTeam] += 150;
             showNotification(`🎉 HAI CATTURATO IL BOCCINO D'ORO! +150pts\n\nFINE PARTITA!`);
+            actionPressed = false;
 
             setTimeout(() => {
                 showGameOver(teamScores);
