@@ -344,19 +344,32 @@ class AIPlayer {
     createNameTag(scene) {
         const canvas = document.createElement('canvas');
         canvas.width = 256;
-        canvas.height = 64;
+        canvas.height = 72;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = 'rgba(0,0,0,0.8)';
-        ctx.fillRect(0, 0, 256, 64);
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 28px Arial';
+
+        // Team colors: Storm = cyan, Flame = orange
+        const isStorm = this.team === Team.STORM;
+        const teamColor = isStorm ? '#00CED1' : '#FF6B35';
+        const teamIcon = isStorm ? '⚡' : '🔥';
+
+        // Background colored by team
+        ctx.fillStyle = 'rgba(0,0,0,0.75)';
+        ctx.fillRect(0, 0, 256, 72);
+        // Colored border to identify team clearly
+        ctx.strokeStyle = teamColor;
+        ctx.lineWidth = 6;
+        ctx.strokeRect(3, 3, 250, 66);
+
+        // Team icon + role text in team color
+        ctx.fillStyle = teamColor;
+        ctx.font = 'bold 30px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(`${this.role.toUpperCase()}`, 128, 42);
+        ctx.fillText(`${teamIcon} ${this.role.toUpperCase()}`, 128, 48);
 
         const texture = new THREE.CanvasTexture(canvas);
         const spriteMat = new THREE.SpriteMaterial({ map: texture });
         const sprite = new THREE.Sprite(spriteMat);
-        sprite.scale.set(2, 0.5, 1);
+        sprite.scale.set(2.4, 0.65, 1);
         sprite.position.y = 2.5;
         this.mesh.add(sprite);
     }
@@ -562,6 +575,8 @@ class AIPlayer {
     }
 
     captureSnitch(gameState) {
+        if (gameEnded) return; // Evita game-over multipli
+        gameEnded = true;
         this.actionCooldown = 3;
         const points = 150;
         gameState.teamScores[this.team] += points;
@@ -677,6 +692,7 @@ let quaffle = null; // 1 Quaffle
 let goalRings = [];
 
 let gameStarted = false;
+let gameEnded = false;
 let gameTime = 0;
 let teamScores = { storm: 0, flame: 0 };
 
@@ -862,6 +878,35 @@ function createPlayer() {
     player = playerModel.group;
     const startZ = playerTeam === Team.STORM ? -20 : 20;
     player.position.set(0, 10, startZ);
+
+    // "TU" marker above the player so you always know who you control
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 96;
+    const ctx = canvas.getContext('2d');
+    const isStorm = playerTeam === Team.STORM;
+    const teamColor = isStorm ? '#00CED1' : '#FF6B35';
+    const teamIcon = isStorm ? '⚡' : '🔥';
+
+    ctx.fillStyle = teamColor;
+    ctx.font = 'bold 40px Arial';
+    ctx.textAlign = 'center';
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 5;
+    ctx.strokeText(`▼ TU ${teamIcon}`, 128, 42);
+    ctx.fillText(`▼ TU ${teamIcon}`, 128, 42);
+    ctx.font = 'bold 26px Arial';
+    ctx.fillStyle = 'white';
+    ctx.strokeText(`${playerRole.toUpperCase()}`, 128, 78);
+    ctx.fillText(`${playerRole.toUpperCase()}`, 128, 78);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false }));
+    sprite.scale.set(3, 1.1, 1);
+    sprite.position.y = 3.2;
+    sprite.renderOrder = 999;
+    player.add(sprite);
+
     scene.add(player);
 }
 
@@ -931,12 +976,13 @@ function createAIPlayers() {
         }
     });
 
-    // DEBUG: Verifica composizione squadre
-    console.log(`PLAYER: ${playerRole.toUpperCase()} - Team ${playerTeam.toUpperCase()}`);
-    console.log(`Team ${playerTeam.toUpperCase()}:`,
-        aiPlayers.filter(ai => ai.team === playerTeam).map(ai => ai.role));
-    console.log(`Team ${opponentTeam.toUpperCase()}:`,
-        aiPlayers.filter(ai => ai.team === opponentTeam).map(ai => ai.role));
+    // Verifica composizione: ogni squadra deve avere esattamente 1 Seeker
+    const countSeekers = (team) => {
+        let n = aiPlayers.filter(ai => ai.team === team && ai.role === PlayerRole.SEEKER).length;
+        if (playerRole === PlayerRole.SEEKER && playerTeam === team) n++;
+        return n;
+    };
+    console.log(`Squadre create — ${playerTeam.toUpperCase()}: ${countSeekers(playerTeam)} seeker | ${opponentTeam.toUpperCase()}: ${countSeekers(opponentTeam)} seeker`);
 }
 
 function createGoalRings() {
@@ -1267,11 +1313,22 @@ function updateCamera() {
 }
 
 function updateHUD() {
-    if (!player || !snitch || !snitch.mesh) return;
+    if (!player) return;
 
-    const dist = player.position.distanceTo(snitch.mesh.position);
+    // Distanza pertinente al ruolo
     const distEl = document.getElementById('distance');
-    if (distEl) distEl.textContent = `🎯 ${dist.toFixed(1)}m`;
+    if (distEl) {
+        let target = null, label = '';
+        if (playerRole === PlayerRole.CHASER && quaffle && quaffle.mesh && !playerHeldQuaffle) {
+            target = quaffle.mesh; label = '🏈 Quaffle';
+        } else if (snitch && snitch.mesh) {
+            target = snitch.mesh; label = '🎯 Boccino';
+        }
+        if (target) {
+            const dist = player.position.distanceTo(target.position);
+            distEl.textContent = `${label}: ${dist.toFixed(1)}m`;
+        }
+    }
 
     const minutes = Math.floor(gameTime / 60);
     const seconds = Math.floor(gameTime % 60);
@@ -1283,21 +1340,40 @@ function updateHUD() {
 }
 
 function updateRoleDisplay() {
+    const teamIcon = playerTeam === Team.STORM ? '⚡' : '🔥';
+    const teamName = playerTeam === Team.STORM ? 'STORM' : 'FLAME';
+
     const roleEl = document.getElementById('playerRole');
     if (roleEl && playerRole) {
-        const teamIcon = playerTeam === Team.STORM ? '⚡' : '🔥';
-        const teamName = playerTeam === Team.STORM ? 'STORM' : 'FLAME';
         roleEl.textContent = `${teamIcon} ${teamName} ${playerRole.toUpperCase()}`;
+    }
+
+    // Objective hint - tells the player exactly what to do and which key
+    const hintEl = document.getElementById('objectiveHint');
+    if (hintEl && playerRole) {
+        const objectives = {
+            seeker: `🎯 SEEKER: insegui e tocca il <b>Boccino d'Oro</b> per vincere la partita! (+150 pt)`,
+            beater: `⚔️ BEATER: avvicinati a un <b>Bludger</b> e premi <span class="obj-action">E / AZIONE</span> per scagliarlo contro un avversario!`,
+            chaser: `🏈 CHASER: prendi la <b>Quaffle</b> e portala negli anelli avversari per segnare (+10 pt). Premi <span class="obj-action">E / AZIONE</span> per rubarla!`,
+            keeper: `🛡️ KEEPER: resta vicino ai tuoi anelli e premi <span class="obj-action">E / AZIONE</span> per bloccare i tiri avversari!`
+        };
+        hintEl.innerHTML = objectives[playerRole] || '';
     }
 }
 
 function checkPlayerActions() {
-    if (!player || playerState === PlayerState.STUNNED) return;
+    if (!player || playerState === PlayerState.STUNNED || gameEnded) return;
 
-    // SEEKER: capture snitch
+    // Riconciliazione: se un avversario ci ha rubato la Quaffle, rilasciala
+    if (playerHeldQuaffle && quaffle && quaffle.holder && quaffle.holder.mesh !== player) {
+        playerHeldQuaffle = null;
+    }
+
+    // SEEKER: capture snitch (guardia gameEnded evita game-over multipli)
     if (playerRole === PlayerRole.SEEKER && snitch && snitch.mesh) {
         const dist = player.position.distanceTo(snitch.mesh.position);
         if (dist < 2.5) {
+            gameEnded = true;
             teamScores[playerTeam] += 150;
             showNotification(`🎉 HAI CATTURATO IL BOCCINO D'ORO! +150pts\n\nFINE PARTITA!`);
 
@@ -1312,21 +1388,24 @@ function checkPlayerActions() {
         if (!playerHeldQuaffle) {
             // Try to pick up or steal
             if (quaffle.held && quaffle.holder && quaffle.holder.team !== playerTeam) {
-                // Try to tackle/steal
+                // Steal requires pressing action (E / AZIONE)
                 const dist = player.position.distanceTo(quaffle.holder.mesh.position);
-                if (dist < 2.5) {
+                if (dist < 2.5 && actionPressed) {
                     quaffle.holder.heldQuaffle = null;
                     quaffle.held = true;
                     quaffle.holder = { mesh: player, team: playerTeam };
                     playerHeldQuaffle = quaffle;
                     showNotification(`🏈 HAI RUBATO LA QUAFFLE!`);
+                    actionPressed = false;
                 }
             } else if (!quaffle.held) {
+                // Free quaffle picked up automatically on touch
                 const dist = player.position.distanceTo(quaffle.mesh.position);
                 if (dist < 2.5) {
                     quaffle.held = true;
                     quaffle.holder = { mesh: player, team: playerTeam };
                     playerHeldQuaffle = quaffle;
+                    showNotification(`🏈 HAI PRESO LA QUAFFLE! Vai agli anelli avversari!`);
                 }
             }
         } else {
@@ -1373,15 +1452,16 @@ function checkPlayerActions() {
         });
     }
 
-    // KEEPER: block shots
-    if (playerRole === PlayerRole.KEEPER && quaffle && quaffle.held && quaffle.holder && quaffle.holder.team !== playerTeam) {
+    // KEEPER: block shots (MANUALE con tasto E o pulsante AZIONE)
+    if (playerRole === PlayerRole.KEEPER && actionPressed && quaffle && quaffle.held && quaffle.holder && quaffle.holder.team !== playerTeam) {
         const dist = player.position.distanceTo(quaffle.holder.mesh.position);
-        if (dist < 2) {
+        if (dist < 3) { // raggio aumentato per facilitare il blocco
             if (quaffle.holder.heldQuaffle) {
                 quaffle.holder.heldQuaffle = null;
             }
             quaffle.drop(player.position);
             showNotification(`🛡️ HAI BLOCCATO IL TIRO!`);
+            actionPressed = false;
         }
     }
 }

@@ -244,6 +244,26 @@
             border-radius: 20px;
         }
 
+        #objectiveHint {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 92%;
+            font-size: 15px;
+            padding: 10px 18px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(255, 215, 0, 0.7);
+            border-radius: 14px;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        #objectiveHint .obj-action {
+            color: #FFD54A;
+            font-weight: bold;
+        }
+
         /* IMPROVED Mobile Controls */
         #mobileControls {
             position: fixed;
@@ -412,6 +432,12 @@
             🛡️ Keeper blocca fisicamente i tiri<br>
             👁️ Seeker cattura Snitch = FINE PARTITA<br>
         </p>
+        <div style="margin-top: 20px; font-size: 14px; opacity: 0.85; max-width: 650px; text-align: center; padding: 12px 20px; background: rgba(255,255,255,0.08); border-radius: 12px;">
+            <b>🎮 CONTROLLI</b><br>
+            <b>PC:</b> WASD = muovi · SPAZIO = su · CTRL = giù · SHIFT = boost · <b>E = AZIONE</b><br>
+            <b>Mobile:</b> Joystick · ▲▼ = su/giù · BOOST · <b>AZIONE ⚔️</b><br>
+            <span style="opacity:0.8;">L'<b>AZIONE</b> serve a Beater (colpire), Chaser (rubare) e Keeper (bloccare)</span>
+        </div>
     </div>
 
     <!-- Ceremony Screen -->
@@ -455,6 +481,7 @@
             <div id="teamScores">⚡ Storm: 0 | 🔥 Flame: 0</div>
             <div id="timer">⏱️ 0:00</div>
         </div>
+        <div id="objectiveHint">Preparazione...</div>
         <div id="distance">🎯 --m</div>
     </div>
 
