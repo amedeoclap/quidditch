@@ -730,7 +730,7 @@ function startCeremony() {
         }
         setTimeout(() => {
             const roleSelection = document.getElementById('roleSelection');
-            if (roleSelection) roleSelection.style.display = 'block';
+            if (roleSelection) roleSelection.classList.add('visible');
         }, 3000);
     }
 }
@@ -744,7 +744,7 @@ function selectRole(role) {
     if (greetingEl) greetingEl.textContent = announcement;
 
     const roleSelection = document.getElementById('roleSelection');
-    if (roleSelection) roleSelection.style.display = 'none';
+    if (roleSelection) roleSelection.classList.remove('visible');
 
     setTimeout(() => {
         const ceremonyScreen = document.getElementById('ceremonyScreen');
@@ -788,13 +788,14 @@ function initGame() {
     scene.fog = new THREE.Fog(0x87CEEB, 60, 150);
 
     // Camera
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const viewport = getViewportSize();
+    camera = new THREE.PerspectiveCamera(75, viewport.width / viewport.height, 0.1, 1000);
     camera.position.set(0, 15, 25);
 
     // Renderer
     const canvas = document.getElementById('gameCanvas');
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(viewport.width, viewport.height, false);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
 
@@ -1018,18 +1019,23 @@ function setupControls() {
     const handle = joystick.querySelector('.joystick-handle');
     if (!handle) return;
 
-    joystick.addEventListener('touchstart', (e) => {
+    const getPoint = (e) => e.touches ? e.touches[0] : e;
+
+    const startJoystick = (e) => {
         e.preventDefault();
         joystickActive = true;
+        if (joystick.setPointerCapture && e.pointerId !== undefined) {
+            joystick.setPointerCapture(e.pointerId);
+        }
         const rect = joystick.getBoundingClientRect();
         joystick.dataset.startX = rect.left + rect.width / 2;
         joystick.dataset.startY = rect.top + rect.height / 2;
-    });
+    };
 
-    joystick.addEventListener('touchmove', (e) => {
+    const moveJoystick = (e) => {
         if (!joystickActive) return;
         e.preventDefault();
-        const touch = e.touches[0];
+        const touch = getPoint(e);
         const startX = parseFloat(joystick.dataset.startX);
         const startY = parseFloat(joystick.dataset.startY);
         const deltaX = touch.clientX - startX;
@@ -1041,63 +1047,103 @@ function setupControls() {
 
         joystickDirection.x = Math.cos(angle) * (distance / 40);
         joystickDirection.y = Math.sin(angle) * (distance / 40);
-    });
+    };
 
-    joystick.addEventListener('touchend', () => {
+    const stopJoystick = (e) => {
+        if (e) e.preventDefault();
         joystickActive = false;
         handle.style.transform = 'translate(-50%, -50%)';
         joystickDirection.x = 0;
         joystickDirection.y = 0;
-    });
+    };
 
-    boostButton.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        isBoosting = true;
-        boostButton.style.transform = 'scale(0.9)';
-    });
+    const bindPress = (element, onDown, onUp) => {
+        if (!element) return;
+        const down = (e) => {
+            e.preventDefault();
+            if (element.setPointerCapture && e.pointerId !== undefined) {
+                element.setPointerCapture(e.pointerId);
+            }
+            onDown();
+        };
+        const up = (e) => {
+            if (e) e.preventDefault();
+            onUp();
+        };
 
-    boostButton.addEventListener('touchend', () => {
-        isBoosting = false;
-        boostButton.style.transform = 'scale(1)';
-    });
+        if (window.PointerEvent) {
+            element.addEventListener('pointerdown', down);
+            element.addEventListener('pointerup', up);
+            element.addEventListener('pointercancel', up);
+            element.addEventListener('lostpointercapture', up);
+        } else {
+            element.addEventListener('touchstart', down, { passive: false });
+            element.addEventListener('touchend', up, { passive: false });
+            element.addEventListener('touchcancel', up, { passive: false });
+        }
+    };
+
+    if (window.PointerEvent) {
+        joystick.addEventListener('pointerdown', startJoystick);
+        joystick.addEventListener('pointermove', moveJoystick);
+        joystick.addEventListener('pointerup', stopJoystick);
+        joystick.addEventListener('pointercancel', stopJoystick);
+        joystick.addEventListener('lostpointercapture', stopJoystick);
+    } else {
+        joystick.addEventListener('touchstart', startJoystick, { passive: false });
+        joystick.addEventListener('touchmove', moveJoystick, { passive: false });
+        joystick.addEventListener('touchend', stopJoystick, { passive: false });
+        joystick.addEventListener('touchcancel', stopJoystick, { passive: false });
+    }
+
+    bindPress(
+        boostButton,
+        () => {
+            isBoosting = true;
+            boostButton.style.transform = 'scale(0.9)';
+        },
+        () => {
+            isBoosting = false;
+            boostButton.style.transform = 'scale(1)';
+        }
+    );
 
     // Action button (for Beater, Keeper, Chaser actions)
-    if (actionButton) {
-        actionButton.addEventListener('touchstart', (e) => {
-            e.preventDefault();
+    bindPress(
+        actionButton,
+        () => {
             actionPressed = true;
             actionButton.style.transform = 'scale(0.9)';
-        });
-
-        actionButton.addEventListener('touchend', () => {
+        },
+        () => {
             actionPressed = false;
             actionButton.style.transform = 'scale(1)';
-        });
-    }
+        }
+    );
 
-    if (upButton) {
-        upButton.addEventListener('touchstart', (e) => {
-            e.preventDefault();
+    bindPress(
+        upButton,
+        () => {
             verticalInput = 1;
             upButton.style.transform = 'scale(0.9)';
-        });
-        upButton.addEventListener('touchend', () => {
+        },
+        () => {
             verticalInput = 0;
             upButton.style.transform = 'scale(1)';
-        });
-    }
+        }
+    );
 
-    if (downButton) {
-        downButton.addEventListener('touchstart', (e) => {
-            e.preventDefault();
+    bindPress(
+        downButton,
+        () => {
             verticalInput = -1;
             downButton.style.transform = 'scale(0.9)';
-        });
-        downButton.addEventListener('touchend', () => {
+        },
+        () => {
             verticalInput = 0;
             downButton.style.transform = 'scale(1)';
-        });
-    }
+        }
+    );
 
     // Keyboard controls
     window.addEventListener('keydown', (e) => {
@@ -1516,10 +1562,31 @@ function animate() {
     }
 }
 
-window.addEventListener('resize', () => {
-    if (camera && renderer) {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+function getViewportSize() {
+    if (window.visualViewport) {
+        return {
+            width: Math.round(window.visualViewport.width),
+            height: Math.round(window.visualViewport.height)
+        };
     }
-});
+
+    return {
+        width: window.innerWidth,
+        height: window.innerHeight
+    };
+}
+
+function resizeGame() {
+    if (camera && renderer) {
+        const viewport = getViewportSize();
+        camera.aspect = viewport.width / viewport.height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(viewport.width, viewport.height, false);
+    }
+}
+
+window.addEventListener('resize', resizeGame);
+window.addEventListener('orientationchange', () => setTimeout(resizeGame, 250));
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', resizeGame);
+}
