@@ -22,12 +22,18 @@
             position: fixed;
             width: 100%;
             height: 100%;
+            height: 100dvh;
+            overscroll-behavior: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         #gameCanvas {
             display: none;
             width: 100vw;
             height: 100vh;
+            height: 100dvh;
+            touch-action: none;
         }
 
         /* Start Screen */
@@ -37,6 +43,7 @@
             left: 0;
             width: 100%;
             height: 100%;
+            height: 100dvh;
             background: rgba(0,0,0,0.95);
             display: flex;
             flex-direction: column;
@@ -44,6 +51,10 @@
             align-items: center;
             color: white;
             z-index: 1000;
+            padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            text-align: center;
         }
 
         #startScreen.hidden {
@@ -99,6 +110,7 @@
             left: 0;
             width: 100%;
             height: 100%;
+            height: 100dvh;
             background: radial-gradient(circle, #2d1b4e 0%, #0a0a0a 100%);
             display: none;
             flex-direction: column;
@@ -106,6 +118,9 @@
             align-items: center;
             z-index: 2000;
             color: white;
+            padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         #destinyHoodImage {
@@ -155,6 +170,10 @@
             justify-content: center;
             gap: 15px;
             max-width: 90%;
+        }
+
+        #roleSelection.visible {
+            display: flex;
         }
 
         .role-button {
@@ -207,8 +226,10 @@
             justify-content: space-between;
             align-items: center;
             padding: 12px;
+            padding-top: max(12px, env(safe-area-inset-top));
             background: rgba(0,0,0,0.5);
             backdrop-filter: blur(10px);
+            gap: 8px;
         }
 
         #playerRole {
@@ -268,8 +289,11 @@
         #mobileControls {
             position: fixed;
             bottom: 20px;
+            bottom: max(16px, env(safe-area-inset-bottom));
             left: 10px;
+            left: max(10px, env(safe-area-inset-left));
             right: 10px;
+            right: max(10px, env(safe-area-inset-right));
             display: none;
             justify-content: space-between;
             align-items: flex-end;
@@ -330,6 +354,8 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
             touch-action: none;
             transition: all 0.1s;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         .action-button:active {
@@ -415,6 +441,187 @@
             .joystick-handle { width: 45px; height: 45px; }
             .action-button { width: 75px; height: 75px; font-size: 14px; }
             .vertical-button { width: 60px; height: 60px; font-size: 24px; }
+        }
+
+        @media (max-width: 768px) and (orientation: portrait) {
+            #startScreen, #ceremonyScreen {
+                justify-content: flex-start;
+            }
+
+            #title {
+                font-size: 34px;
+                margin-top: 12px;
+            }
+
+            #subtitle {
+                margin-bottom: 24px;
+            }
+
+            .menu-button {
+                width: min(92vw, 360px);
+                margin: 10px 0;
+                padding: 16px 20px;
+                font-size: 20px;
+            }
+
+            #destinyHoodImage {
+                width: 130px;
+                height: 130px;
+                margin: 18px 0 24px;
+            }
+
+            #destinyHoodImage::before {
+                font-size: 66px;
+            }
+
+            #roleSelection {
+                width: 100%;
+                max-width: 420px;
+                gap: 10px;
+            }
+
+            .role-button {
+                min-width: min(44vw, 170px);
+                flex: 1 1 44%;
+                padding: 14px 10px;
+                border-radius: 18px;
+            }
+
+            .role-button .role-icon {
+                font-size: 30px;
+                margin-bottom: 6px;
+            }
+
+            #topBar {
+                align-items: stretch;
+                flex-wrap: wrap;
+            }
+
+            #playerRole, #timer {
+                font-size: 13px;
+                padding: 6px 10px;
+            }
+
+            #teamScores {
+                order: 3;
+                flex-basis: 100%;
+                font-size: 16px;
+            }
+
+            #objectiveHint {
+                top: 92px;
+                font-size: 13px;
+                padding: 8px 12px;
+            }
+
+            #distance {
+                bottom: 168px;
+                font-size: 14px;
+            }
+
+            #mobileControls {
+                bottom: max(10px, env(safe-area-inset-bottom));
+            }
+
+            .control-left, .control-right {
+                gap: 7px;
+            }
+
+            .joystick {
+                width: 100px;
+                height: 100px;
+                border-width: 3px;
+            }
+
+            .joystick-handle {
+                width: 42px;
+                height: 42px;
+            }
+
+            .action-button {
+                width: 68px;
+                height: 68px;
+                font-size: 12px;
+                border-width: 3px;
+            }
+
+            .vertical-button {
+                width: 52px;
+                height: 52px;
+            }
+
+            #notification {
+                width: min(92vw, 420px);
+                font-size: 26px;
+            }
+        }
+
+        @media (max-height: 520px) and (orientation: landscape) {
+            #startScreen, #ceremonyScreen {
+                justify-content: flex-start;
+            }
+
+            #title {
+                font-size: 30px;
+                margin-bottom: 8px;
+            }
+
+            #subtitle {
+                margin-bottom: 12px;
+            }
+
+            .menu-button {
+                font-size: 18px;
+                padding: 12px 32px;
+                margin: 8px;
+            }
+
+            #startScreen p,
+            #startScreen div[style] {
+                font-size: 12px !important;
+                margin-top: 8px !important;
+            }
+
+            #destinyHoodImage {
+                width: 96px;
+                height: 96px;
+                margin: 6px 0 14px;
+            }
+
+            #destinyHoodImage::before {
+                font-size: 50px;
+            }
+
+            #hoodGreeting {
+                font-size: 18px;
+                margin-bottom: 16px;
+            }
+
+            .role-button {
+                min-width: 130px;
+                padding: 12px 16px;
+            }
+
+            .role-button .role-icon {
+                font-size: 28px;
+            }
+
+            .joystick {
+                width: 92px;
+                height: 92px;
+            }
+
+            .action-button {
+                width: 62px;
+                height: 62px;
+                font-size: 11px;
+            }
+
+            .vertical-button {
+                width: 48px;
+                height: 48px;
+                font-size: 20px;
+            }
         }
     </style>
 </head>
