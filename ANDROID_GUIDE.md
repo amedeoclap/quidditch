@@ -8,7 +8,7 @@
 
 1. **Sul PC**:
    - Vai in `quidditch/web/`
-   - Copia i 2 file: `index.html` e `game.js`
+   - Copia i 2 file della versione consigliata: `index-quidditch.html` e `game-quidditch.js`
 
 2. **Trasferimento**:
    - **Via USB**: Collega telefono, copia in `Download/` o `Documents/`
@@ -20,7 +20,7 @@
    - Apri **Chrome** (o qualsiasi browser)
    - Vai a `chrome://downloads` (nella barra URL)
    - Oppure usa un **File Manager** (Files by Google, ES File Explorer, etc.)
-   - Trova `index.html`
+   - Trova `index-quidditch.html`
    - **Tap** sul file
    - Scegli **"Apri con Chrome"** (o altro browser)
 
@@ -60,10 +60,8 @@ Host il gioco online, accessibile da qualsiasi device:
 **Setup**:
 1. Vai su GitHub → Tuo repository `quidditch`
 2. Settings → Pages
-3. Source: Branch `gh-pages` (oppure crea branch)
-4. Copia `web/index.html` e `web/game.js` nel root del branch
-5. Push
-6. Aspetta 2 minuti
+3. Source: branch principale, cartella root
+4. Aspetta 2 minuti
 
 **URL finale**:
 `https://TUOUSERNAME.github.io/quidditch/`
@@ -143,8 +141,8 @@ cordova build android
 
 ### Passo 1: Preparazione File (PC)
 - [ ] Vai in `quidditch/web/`
-- [ ] Trova `index.html` (380 KB circa)
-- [ ] Trova `game.js` (20 KB circa)
+- [ ] Trova `index-quidditch.html`
+- [ ] Trova `game-quidditch.js`
 - [ ] Copia entrambi
 
 ### Passo 2: Trasferimento
@@ -156,7 +154,7 @@ Scegli UNO:
 
 ### Passo 3: Apertura (Telefono)
 - [ ] Apri app **Files** (o **Download**)
-- [ ] Trova `index.html`
+- [ ] Trova `index-quidditch.html`
 - [ ] **Tap** sul file
 - [ ] Scegli **Chrome** (o Firefox/Edge)
 - [ ] (Se chiede app, scegli "Sempre con Chrome")
@@ -174,7 +172,7 @@ Scegli UNO:
 
 ### "Il file non si apre"
 **Soluzione**:
-- Assicurati di aprire `index.html` (NON `game.js`)
+- Assicurati di aprire `index-quidditch.html` (NON `game-quidditch.js`)
 - Usa Chrome (più compatibile)
 - Se dà errore, prova Firefox o Edge
 
