@@ -1195,31 +1195,33 @@ function updatePlayer(delta) {
 
     const speed = isBoosting ? PLAYER_BOOST_SPEED : PLAYER_BASE_SPEED;
 
-    // Joystick controls
+    const desiredVelocity = new THREE.Vector3();
+
+    // Joystick controls: direct movement, not accumulating acceleration.
     if (joystickActive) {
-        playerVelocity.x += joystickDirection.x * speed;
-        playerVelocity.z += joystickDirection.y * speed;
+        desiredVelocity.x += joystickDirection.x * speed;
+        desiredVelocity.z += joystickDirection.y * speed;
     }
 
     // Keyboard controls (WASD)
-    if (keysPressed.a) playerVelocity.x -= speed;
-    if (keysPressed.d) playerVelocity.x += speed;
-    if (keysPressed.w) playerVelocity.z -= speed;
-    if (keysPressed.s) playerVelocity.z += speed;
+    if (keysPressed.a) desiredVelocity.x -= speed;
+    if (keysPressed.d) desiredVelocity.x += speed;
+    if (keysPressed.w) desiredVelocity.z -= speed;
+    if (keysPressed.s) desiredVelocity.z += speed;
 
     // Vertical controls (Space/Ctrl or buttons)
     if (keysPressed.space) {
-        playerVelocity.y += speed * 0.8;
+        desiredVelocity.y += speed * 0.8;
     }
     if (keysPressed.ctrl) {
-        playerVelocity.y -= speed * 0.8;
+        desiredVelocity.y -= speed * 0.8;
     }
     if (verticalInput !== 0) {
-        playerVelocity.y += verticalInput * speed * 0.8;
+        desiredVelocity.y += verticalInput * speed * 0.8;
     }
 
+    playerVelocity.lerp(desiredVelocity, desiredVelocity.length() > 0 ? 0.55 : 0.75);
     player.position.add(playerVelocity);
-    playerVelocity.multiplyScalar(0.82);
 
     player.position.x = Math.max(-BOUNDS.x, Math.min(BOUNDS.x, player.position.x));
     player.position.y = Math.max(2, Math.min(BOUNDS.y, player.position.y));
@@ -1530,9 +1532,9 @@ function checkPlayerActions() {
 function showNotification(message) {
     const notif = document.getElementById('notification');
     if (notif) {
-        notif.textContent = message;
+        notif.textContent = message.replace(/\n+/g, ' ');
         notif.classList.add('show');
-        setTimeout(() => notif.classList.remove('show'), 2500);
+        setTimeout(() => notif.classList.remove('show'), 1500);
     }
 }
 
