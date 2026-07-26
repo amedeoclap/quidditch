@@ -25,6 +25,7 @@ class StylizedPlayer {
     constructor(team) {
         this.group = new THREE.Group();
         const color = team === Team.STORM ? 0x00CED1 : 0xFF6B35;
+        const accent = team === Team.STORM ? 0xE7FFFF : 0xFFE1A8;
 
         // Head
         const headGeo = new THREE.SphereGeometry(0.3, 12, 12);
@@ -40,11 +41,23 @@ class StylizedPlayer {
         this.group.add(this.head);
 
         // Body
-        const bodyGeo = new THREE.CylinderGeometry(0.25, 0.3, 1, 8);
+        const bodyGeo = new THREE.CylinderGeometry(0.25, 0.34, 1, 8);
         this.body = new THREE.Mesh(bodyGeo, mat.clone());
         this.body.position.y = 0.7;
         this.body.castShadow = true;
         this.group.add(this.body);
+
+        const sashGeo = new THREE.TorusGeometry(0.34, 0.035, 6, 18);
+        const sashMat = new THREE.MeshStandardMaterial({
+            color: accent,
+            emissive: accent,
+            emissiveIntensity: 0.18,
+            roughness: 0.4
+        });
+        this.sash = new THREE.Mesh(sashGeo, sashMat);
+        this.sash.position.y = 0.95;
+        this.sash.rotation.x = Math.PI / 2.7;
+        this.group.add(this.sash);
 
         // Arms
         const armGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.8, 6);
@@ -218,7 +231,7 @@ class Bludger {
         }
 
         // Bounds with bounce
-        const BOUNDS = { x: 40, y: 25, z: 40 };
+        const BOUNDS = { x: 56, y: 30, z: 56 };
         ['x', 'y', 'z'].forEach(axis => {
             const bound = axis === 'y' ? BOUNDS.y : BOUNDS.x;
             const min = axis === 'y' ? 2 : -bound;
@@ -325,20 +338,29 @@ class AIPlayer {
 
         this.heldQuaffle = null;
         this.actionCooldown = 0;
+        this.patrolTarget = this.createPatrolTarget();
 
         // Starting positions based on role
-        const startZ = team === Team.STORM ? -25 : 25;
+        const startZ = team === Team.STORM ? -34 : 34;
         const positions = {
-            seeker: [0, 12, startZ],
-            keeper: [0, 10, startZ + (team === Team.STORM ? -10 : 10)],
-            beater: [(Math.random() - 0.5) * 20, 10, startZ],
-            chaser: [(Math.random() - 0.5) * 15, 10, startZ + 5]
+            seeker: [(Math.random() - 0.5) * 38, 15, startZ * 0.4],
+            keeper: [0, 12, startZ + (team === Team.STORM ? -14 : 14)],
+            beater: [(Math.random() - 0.5) * 48, 13, startZ * 0.55],
+            chaser: [(Math.random() - 0.5) * 44, 12, startZ * 0.25]
         };
 
         this.mesh.position.set(...(positions[role] || [0, 10, 0]));
 
         this.createNameTag(scene);
         scene.add(this.mesh);
+    }
+
+    createPatrolTarget() {
+        return new THREE.Vector3(
+            (Math.random() - 0.5) * BOUNDS.x * 1.65,
+            8 + Math.random() * 14,
+            (Math.random() - 0.5) * BOUNDS.z * 1.65
+        );
     }
 
     createNameTag(scene) {
@@ -405,12 +427,22 @@ class AIPlayer {
                 break;
         }
 
+        if (this.velocity.length() < 0.03 && this.role !== PlayerRole.KEEPER) {
+            if (this.mesh.position.distanceTo(this.patrolTarget) < 6) {
+                this.patrolTarget = this.createPatrolTarget();
+            }
+            const patrolDir = new THREE.Vector3()
+                .subVectors(this.patrolTarget, this.mesh.position)
+                .normalize();
+            this.velocity.add(patrolDir.multiplyScalar(0.04));
+        }
+
         // Physics
         this.mesh.position.add(this.velocity);
         this.velocity.multiplyScalar(0.87);
 
         // Bounds
-        const BOUNDS = { x: 40, y: 25, z: 40 };
+        const BOUNDS = { x: 56, y: 30, z: 56 };
         this.mesh.position.x = Math.max(-BOUNDS.x, Math.min(BOUNDS.x, this.mesh.position.x));
         this.mesh.position.y = Math.max(2, Math.min(BOUNDS.y, this.mesh.position.y));
         this.mesh.position.z = Math.max(-BOUNDS.z, Math.min(BOUNDS.z, this.mesh.position.z));
@@ -676,7 +708,7 @@ class GoalRing {
 
 // ===== GLOBAL GAME STATE =====
 let scene, camera, renderer;
-let player, playerModel, snitch;
+let player, playerModel, snitch, snitchIndicator;
 let playerVelocity, snitchVelocity;
 let playerRole = null;
 let playerTeam = null;
@@ -700,6 +732,8 @@ let joystickDirection = { x: 0, y: 0 };
 let isBoosting = false;
 let verticalInput = 0;
 let actionPressed = false; // Pulsante AZIONE per Beater/Keeper/Chaser
+let cameraInput = 0;
+let cameraYaw = 0;
 
 // Keyboard controls
 let keysPressed = {
@@ -709,7 +743,7 @@ let keysPressed = {
 };
 
 let destinyHood = new DestinyHood();
-const BOUNDS = { x: 40, y: 25, z: 40 };
+const BOUNDS = { x: 56, y: 30, z: 56 };
 const SNITCH_UNLOCK_TIME = 45;
 const PLAYER_BASE_SPEED = 0.18;
 const PLAYER_BOOST_SPEED = 0.32;
@@ -789,8 +823,8 @@ function initGame() {
 
     // Scene
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87CEEB);
-    scene.fog = new THREE.Fog(0x87CEEB, 60, 150);
+    scene.background = new THREE.Color(0x73B7FF);
+    scene.fog = new THREE.Fog(0x73B7FF, 80, 190);
 
     // Camera
     const viewport = getViewportSize();
@@ -803,19 +837,20 @@ function initGame() {
     renderer.setSize(viewport.width, viewport.height, false);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
+    renderer.outputEncoding = THREE.sRGBEncoding;
 
     // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.72);
     scene.add(ambientLight);
 
-    const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    sunLight.position.set(50, 100, 30);
+    const sunLight = new THREE.DirectionalLight(0xfff4d6, 1.05);
+    sunLight.position.set(60, 110, 45);
     sunLight.castShadow = true;
     scene.add(sunLight);
 
     // Ground
-    const groundGeo = new THREE.PlaneGeometry(200, 200);
-    const groundMat = new THREE.MeshStandardMaterial({ color: 0x4a7c59 });
+    const groundGeo = new THREE.PlaneGeometry(240, 240);
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x3E8F63, roughness: 0.85 });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -5;
@@ -823,6 +858,7 @@ function initGame() {
     scene.add(ground);
 
     createArena();
+    createSkyDecor();
     createPlayer();
     createSnitch(); // Golden Snitch
     createQuaffle(); // 1 Quaffle
@@ -836,10 +872,44 @@ function initGame() {
     animate();
 }
 
+function createSkyDecor() {
+    const cloudMat = new THREE.MeshStandardMaterial({
+        color: 0xFFFFFF,
+        transparent: true,
+        opacity: 0.42,
+        roughness: 1
+    });
+
+    for (let i = 0; i < 18; i++) {
+        const cloud = new THREE.Group();
+        const blobs = 3 + Math.floor(Math.random() * 3);
+        for (let j = 0; j < blobs; j++) {
+            const blob = new THREE.Mesh(
+                new THREE.SphereGeometry(2.2 + Math.random() * 2.2, 10, 8),
+                cloudMat
+            );
+            blob.position.set(j * 2.4, Math.random() * 0.8, (Math.random() - 0.5) * 2);
+            blob.scale.y = 0.42;
+            cloud.add(blob);
+        }
+        cloud.position.set(
+            (Math.random() - 0.5) * 150,
+            26 + Math.random() * 26,
+            (Math.random() - 0.5) * 150
+        );
+        cloud.rotation.y = Math.random() * Math.PI;
+        scene.add(cloud);
+    }
+}
+
 function createArena() {
     // Platforms
     const platformGeo = new THREE.CylinderGeometry(5, 5, 1, 32);
-    const platformMat = new THREE.MeshStandardMaterial({ color: 0x8B7355 });
+    const platformMat = new THREE.MeshStandardMaterial({
+        color: 0x9B7B4A,
+        roughness: 0.6,
+        metalness: 0.08
+    });
 
     const centerPlatform = new THREE.Mesh(platformGeo, platformMat);
     centerPlatform.position.set(0, 8, 0);
@@ -848,8 +918,9 @@ function createArena() {
     scene.add(centerPlatform);
 
     const positions = [
-        [20, 10, 20], [-20, 10, 20], [20, 10, -20], [-20, 10, -20],
-        [0, 12, 30], [0, 12, -30], [30, 12, 0], [-30, 12, 0]
+        [24, 10, 24], [-24, 10, 24], [24, 10, -24], [-24, 10, -24],
+        [0, 12, 42], [0, 12, -42], [42, 12, 0], [-42, 12, 0],
+        [42, 14, 42], [-42, 14, 42], [42, 14, -42], [-42, 14, -42]
     ];
 
     positions.forEach(pos => {
@@ -863,8 +934,8 @@ function createArena() {
     // Pillars
     const pillarGeo = new THREE.CylinderGeometry(0.5, 0.5, 30, 8);
     const pillarPositions = [
-        [40, 15, 40], [-40, 15, 40], [40, 15, -40], [-40, 15, -40],
-        [40, 15, 0], [-40, 15, 0], [0, 15, 40], [0, 15, -40]
+        [56, 15, 56], [-56, 15, 56], [56, 15, -56], [-56, 15, -56],
+        [56, 15, 0], [-56, 15, 0], [0, 15, 56], [0, 15, -56]
     ];
 
     pillarPositions.forEach(pos => {
@@ -877,6 +948,28 @@ function createArena() {
         pillar.position.set(...pos);
         scene.add(pillar);
     });
+
+    const lineMat = new THREE.LineBasicMaterial({
+        color: 0xF6E38A,
+        transparent: true,
+        opacity: 0.7
+    });
+    const fieldShape = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-BOUNDS.x, -4.85, -BOUNDS.z),
+        new THREE.Vector3(BOUNDS.x, -4.85, -BOUNDS.z),
+        new THREE.Vector3(BOUNDS.x, -4.85, BOUNDS.z),
+        new THREE.Vector3(-BOUNDS.x, -4.85, BOUNDS.z),
+        new THREE.Vector3(-BOUNDS.x, -4.85, -BOUNDS.z)
+    ]);
+    scene.add(new THREE.Line(fieldShape, lineMat));
+
+    [-28, 0, 28].forEach(x => {
+        const lane = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(x, -4.8, -BOUNDS.z),
+            new THREE.Vector3(x, -4.8, BOUNDS.z)
+        ]);
+        scene.add(new THREE.Line(lane, lineMat));
+    });
 }
 
 function createPlayer() {
@@ -884,6 +977,7 @@ function createPlayer() {
     player = playerModel.group;
     const startZ = playerTeam === Team.STORM ? -20 : 20;
     player.position.set(0, 10, startZ);
+    cameraYaw = playerTeam === Team.STORM ? 0 : Math.PI;
 
     // "TU" marker above the player so you always know who you control
     const canvas = document.createElement('canvas');
@@ -917,11 +1011,11 @@ function createPlayer() {
 }
 
 function createSnitch() {
-    const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+    const geometry = new THREE.SphereGeometry(0.85, 32, 32);
     const material = new THREE.MeshStandardMaterial({
         color: 0xFFD700,
         emissive: 0xFFD700,
-        emissiveIntensity: 0.9,
+        emissiveIntensity: 1.25,
         metalness: 1,
         roughness: 0.1
     });
@@ -931,7 +1025,36 @@ function createSnitch() {
     snitch.mesh.castShadow = true;
     scene.add(snitch.mesh);
 
-    const light = new THREE.PointLight(0xFFD700, 3, 25);
+    const haloGeo = new THREE.TorusGeometry(1.45, 0.07, 12, 48);
+    const haloMat = new THREE.MeshBasicMaterial({
+        color: 0xFFF3A0,
+        transparent: true,
+        opacity: 0.9
+    });
+    const halo = new THREE.Mesh(haloGeo, haloMat);
+    halo.rotation.x = Math.PI / 2;
+    snitch.mesh.add(halo);
+
+    const wingGeo = new THREE.ConeGeometry(0.35, 1.4, 4);
+    const wingMat = new THREE.MeshBasicMaterial({
+        color: 0xFFF7C7,
+        transparent: true,
+        opacity: 0.85
+    });
+    const leftWing = new THREE.Mesh(wingGeo, wingMat);
+    leftWing.position.set(-1.25, 0, 0);
+    leftWing.rotation.z = Math.PI / 2;
+    snitch.mesh.add(leftWing);
+    const rightWing = leftWing.clone();
+    rightWing.position.x = 1.25;
+    rightWing.rotation.z = -Math.PI / 2;
+    snitch.mesh.add(rightWing);
+
+    snitchIndicator = createBillboardLabel('▼ BOCCINO', '#FFD700', '#111111');
+    snitchIndicator.position.set(0, 3.2, 0);
+    snitch.mesh.add(snitchIndicator);
+
+    const light = new THREE.PointLight(0xFFD700, 5, 42);
     snitch.mesh.add(light);
 
     snitchVelocity.set(
@@ -939,6 +1062,32 @@ function createSnitch() {
         (Math.random() - 0.5) * 0.03,
         (Math.random() - 0.5) * 0.06
     );
+}
+
+function createBillboardLabel(text, fill, stroke) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = 'bold 46px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = stroke;
+    ctx.fillStyle = fill;
+    ctx.strokeText(text, 256, 64);
+    ctx.fillText(text, 256, 64);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: texture,
+        depthTest: false,
+        transparent: true
+    }));
+    sprite.scale.set(7.5, 1.9, 1);
+    sprite.renderOrder = 1000;
+    return sprite;
 }
 
 function createQuaffle() {
@@ -1019,6 +1168,8 @@ function setupControls() {
     const actionButton = document.getElementById('actionButton');
     const upButton = document.getElementById('upButton');
     const downButton = document.getElementById('downButton');
+    const cameraLeftButton = document.getElementById('cameraLeftButton');
+    const cameraRightButton = document.getElementById('cameraRightButton');
 
     if (!joystick || !boostButton) return;
     const handle = joystick.querySelector('.joystick-handle');
@@ -1150,6 +1301,30 @@ function setupControls() {
         }
     );
 
+    bindPress(
+        cameraLeftButton,
+        () => {
+            cameraInput = -1;
+            cameraLeftButton.style.transform = 'scale(0.92)';
+        },
+        () => {
+            cameraInput = 0;
+            cameraLeftButton.style.transform = 'scale(1)';
+        }
+    );
+
+    bindPress(
+        cameraRightButton,
+        () => {
+            cameraInput = 1;
+            cameraRightButton.style.transform = 'scale(0.92)';
+        },
+        () => {
+            cameraInput = 0;
+            cameraRightButton.style.transform = 'scale(1)';
+        }
+    );
+
     // Keyboard controls
     window.addEventListener('keydown', (e) => {
         switch(e.key.toLowerCase()) {
@@ -1161,6 +1336,8 @@ function setupControls() {
             case 'shift': keysPressed.shift = true; isBoosting = true; break;
             case 'control': keysPressed.ctrl = true; break;
             case 'e': keysPressed.e = true; actionPressed = true; e.preventDefault(); break;
+            case 'q': cameraInput = -1; break;
+            case 'r': cameraInput = 1; break;
         }
     });
 
@@ -1174,6 +1351,10 @@ function setupControls() {
             case 'shift': keysPressed.shift = false; isBoosting = false; break;
             case 'control': keysPressed.ctrl = false; break;
             case 'e': keysPressed.e = false; actionPressed = false; break;
+            case 'q':
+            case 'r':
+                cameraInput = 0;
+                break;
         }
     });
 }
@@ -1219,6 +1400,11 @@ function updatePlayer(delta) {
     if (verticalInput !== 0) {
         desiredVelocity.y += verticalInput * speed * 0.8;
     }
+
+    const horizontalVelocity = new THREE.Vector3(desiredVelocity.x, 0, desiredVelocity.z);
+    horizontalVelocity.applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraYaw);
+    desiredVelocity.x = horizontalVelocity.x;
+    desiredVelocity.z = horizontalVelocity.z;
 
     playerVelocity.lerp(desiredVelocity, desiredVelocity.length() > 0 ? 0.55 : 0.75);
     player.position.add(playerVelocity);
@@ -1351,14 +1537,18 @@ function updateGoalRings(delta) {
 function updateCamera() {
     if (!player) return;
 
-    const targetPos = new THREE.Vector3(
-        player.position.x,
-        player.position.y + 12,
-        player.position.z + 20
+    cameraYaw += cameraInput * 0.045;
+    const followDistance = 24;
+    const followHeight = 12;
+    const offset = new THREE.Vector3(
+        Math.sin(cameraYaw) * followDistance,
+        followHeight,
+        Math.cos(cameraYaw) * followDistance
     );
+    const targetPos = new THREE.Vector3().copy(player.position).add(offset);
 
-    camera.position.lerp(targetPos, 0.05);
-    camera.lookAt(player.position.x, player.position.y + 2, player.position.z);
+    camera.position.lerp(targetPos, 0.09);
+    camera.lookAt(player.position.x, player.position.y + 2.4, player.position.z);
 }
 
 function updateHUD() {
