@@ -362,6 +362,33 @@
             transform: scale(0.9);
         }
 
+        .camera-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .camera-button {
+            width: 46px;
+            height: 46px;
+            background: rgba(40, 60, 120, 0.72);
+            border: 2px solid rgba(160, 205, 255, 0.95);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: white;
+            touch-action: none;
+            transition: all 0.1s;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .camera-button:active {
+            transform: scale(0.92);
+            background: rgba(80, 125, 210, 0.9);
+        }
+
         /* Vertical controls */
         .vertical-controls {
             display: flex;
@@ -444,6 +471,7 @@
             .joystick { width: 110px; height: 110px; }
             .joystick-handle { width: 45px; height: 45px; }
             .action-button { width: 75px; height: 75px; font-size: 14px; }
+            .camera-button { width: 42px; height: 42px; font-size: 20px; }
             .vertical-button { width: 60px; height: 60px; font-size: 24px; }
         }
 
@@ -549,6 +577,12 @@
                 border-width: 3px;
             }
 
+            .camera-button {
+                width: 38px;
+                height: 38px;
+                font-size: 18px;
+            }
+
             .vertical-button {
                 width: 52px;
                 height: 52px;
@@ -623,6 +657,12 @@
                 font-size: 11px;
             }
 
+            .camera-button {
+                width: 36px;
+                height: 36px;
+                font-size: 17px;
+            }
+
             .vertical-button {
                 width: 48px;
                 height: 48px;
@@ -647,8 +687,8 @@
         </p>
         <div style="margin-top: 20px; font-size: 14px; opacity: 0.85; max-width: 650px; text-align: center; padding: 12px 20px; background: rgba(255,255,255,0.08); border-radius: 12px;">
             <b>🎮 CONTROLLI</b><br>
-            <b>PC:</b> WASD = muovi · SPAZIO = su · CTRL = giù · SHIFT = boost · <b>E = AZIONE</b><br>
-            <b>Mobile:</b> Joystick · ▲▼ = su/giù · BOOST · <b>AZIONE ⚔️</b><br>
+            <b>PC:</b> WASD = muovi · SPAZIO = su · CTRL = giù · Q/R = camera · SHIFT = boost · <b>E = AZIONE</b><br>
+            <b>Mobile:</b> Joystick · ▲▼ = su/giù · ◀ ▶ camera · BOOST · <b>AZIONE ⚔️</b><br>
             <span style="opacity:0.8;">L'<b>AZIONE</b> serve a Beater (colpire), Chaser (rubare) e Keeper (bloccare)</span>
         </div>
     </div>
@@ -713,6 +753,10 @@
 
         <!-- Right side: Action + Boost -->
         <div class="control-right">
+            <div class="camera-controls">
+                <div id="cameraLeftButton" class="camera-button">◀</div>
+                <div id="cameraRightButton" class="camera-button">▶</div>
+            </div>
             <div id="actionButton" class="action-button" style="background: rgba(255,100,50,0.7);">AZIONE<br>⚔️</div>
             <div id="boostButton" class="action-button">BOOST<br>⚡</div>
         </div>
