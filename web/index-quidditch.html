@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Sky Spheres v3.2 - True Quidditch</title>
+    <title>Sky Spheres v3.5 - Mobile Polish</title>
     <style>
         * {
             margin: 0;
@@ -232,6 +232,36 @@
             gap: 8px;
         }
 
+        #versionBadge {
+            position: fixed;
+            left: max(10px, env(safe-area-inset-left));
+            bottom: max(156px, calc(env(safe-area-inset-bottom) + 144px));
+            z-index: 110;
+            color: rgba(255,255,255,0.9);
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 0.02em;
+            padding: 5px 8px;
+            background: rgba(0,0,0,0.48);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        #radar {
+            position: fixed;
+            top: max(92px, calc(env(safe-area-inset-top) + 72px));
+            right: max(10px, env(safe-area-inset-right));
+            width: 116px;
+            height: 116px;
+            z-index: 120;
+            background: radial-gradient(circle, rgba(14,35,56,0.7), rgba(3,10,22,0.62));
+            border: 2px solid rgba(255, 215, 0, 0.6);
+            border-radius: 12px;
+            box-shadow: 0 8px 22px rgba(0,0,0,0.28);
+            pointer-events: none;
+        }
+
         #playerRole {
             font-size: 16px;
             padding: 8px 16px;
@@ -270,7 +300,7 @@
             top: 70px;
             left: 50%;
             transform: translateX(-50%);
-            max-width: 92%;
+            max-width: min(92%, 720px);
             font-size: 15px;
             padding: 10px 18px;
             background: rgba(0, 0, 0, 0.6);
@@ -278,6 +308,19 @@
             border-radius: 14px;
             text-align: center;
             line-height: 1.4;
+        }
+
+        #cameraHint {
+            position: fixed;
+            right: max(10px, env(safe-area-inset-right));
+            bottom: max(168px, calc(env(safe-area-inset-bottom) + 154px));
+            z-index: 110;
+            color: rgba(255,255,255,0.88);
+            font-size: 12px;
+            padding: 6px 8px;
+            background: rgba(0,0,0,0.45);
+            border-radius: 8px;
+            pointer-events: none;
         }
 
         #objectiveHint .obj-action {
@@ -544,11 +587,27 @@
                 top: 92px;
                 font-size: 13px;
                 padding: 8px 12px;
+                max-width: calc(100vw - 150px);
             }
 
             #distance {
                 bottom: 168px;
                 font-size: 14px;
+            }
+
+            #radar {
+                top: max(136px, calc(env(safe-area-inset-top) + 112px));
+                width: 96px;
+                height: 96px;
+            }
+
+            #versionBadge {
+                bottom: max(122px, calc(env(safe-area-inset-bottom) + 112px));
+                font-size: 11px;
+            }
+
+            #cameraHint {
+                display: none;
             }
 
             #mobileControls {
@@ -675,7 +734,7 @@
     <!-- Start Screen -->
     <div id="startScreen">
         <div id="title">⚡ SKY SPHERES ⚡</div>
-        <div id="subtitle">v3.2 - True Quidditch Mechanics</div>
+        <div id="subtitle">v3.5 - Mobile Polish</div>
         <button class="menu-button" onclick="window.gameAPI.startCeremony()">🎮 INIZIA AVVENTURA</button>
         <p style="margin-top: 25px; font-size: 16px; opacity: 0.9; max-width: 650px; text-align: center; padding: 0 20px;">
             ⚡ VERO QUIDDITCH da Harry Potter!<br>
@@ -736,6 +795,9 @@
         </div>
         <div id="objectiveHint">Preparazione...</div>
         <div id="distance">🎯 --m</div>
+        <canvas id="radar" width="160" height="160"></canvas>
+        <div id="versionBadge">v3.5</div>
+        <div id="cameraHint">Camera: ◀ ▶ / Q R</div>
     </div>
 
     <!-- IMPROVED Mobile Controls -->
