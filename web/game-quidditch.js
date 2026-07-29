@@ -1,5 +1,7 @@
-// ===== SKY SPHERES v3.2 - TRUE QUIDDITCH MECHANICS =====
+// ===== SKY SPHERES v3.5 - MOBILE POLISH =====
 // Based on Harry Potter books - Complete Quidditch rules
+
+const GAME_VERSION = '3.5';
 
 // ===== ENUMS =====
 const PlayerRole = {
@@ -720,6 +722,7 @@ let aiPlayers = [];
 let bludgers = []; // 2 Bludgers
 let quaffle = null; // 1 Quaffle
 let goalRings = [];
+let snitchTrail = [];
 
 let gameStarted = false;
 let gameEnded = false;
@@ -820,6 +823,14 @@ function initGame() {
 
     playerVelocity = new THREE.Vector3();
     snitchVelocity = new THREE.Vector3();
+    aiPlayers = [];
+    bludgers = [];
+    goalRings = [];
+    snitchTrail = [];
+    teamScores = { storm: 0, flame: 0 };
+    gameTime = 0;
+    gameEnded = false;
+    playerHeldQuaffle = null;
 
     // Scene
     scene = new THREE.Scene();
@@ -868,8 +879,17 @@ function initGame() {
     setupControls();
 
     gameStarted = true;
+    updateVersionDisplay();
     updateRoleDisplay();
     animate();
+}
+
+function updateVersionDisplay() {
+    const badge = document.getElementById('versionBadge');
+    if (badge) badge.textContent = `v${GAME_VERSION}`;
+    const subtitle = document.getElementById('subtitle');
+    if (subtitle) subtitle.textContent = `v${GAME_VERSION} - Mobile Polish`;
+    document.title = `Sky Spheres v${GAME_VERSION}`;
 }
 
 function createSkyDecor() {
@@ -1056,6 +1076,22 @@ function createSnitch() {
 
     const light = new THREE.PointLight(0xFFD700, 5, 42);
     snitch.mesh.add(light);
+
+    const trailMat = new THREE.MeshBasicMaterial({
+        color: 0xFFD700,
+        transparent: true,
+        opacity: 0.55
+    });
+    for (let i = 0; i < 9; i++) {
+        const trailDot = new THREE.Mesh(
+            new THREE.SphereGeometry(0.18 + i * 0.025, 10, 8),
+            trailMat.clone()
+        );
+        trailDot.material.opacity = 0.42 - i * 0.035;
+        trailDot.position.copy(snitch.mesh.position);
+        scene.add(trailDot);
+        snitchTrail.push(trailDot);
+    }
 
     snitchVelocity.set(
         (Math.random() - 0.5) * 0.06,
@@ -1478,6 +1514,13 @@ function updateSnitch(delta) {
     snitch.mesh.rotation.y += delta * 2;
     const pulse = 1 + Math.sin(time * 3) * 0.1;
     snitch.mesh.scale.set(pulse, pulse, pulse);
+
+    snitchTrail.forEach((dot, index) => {
+        const lag = 0.1 + index * 0.035;
+        dot.position.lerp(snitch.mesh.position, lag);
+        const scale = Math.max(0.35, 1 - index * 0.07);
+        dot.scale.set(scale, scale, scale);
+    });
 }
 
 function updateAI(delta) {
@@ -1588,6 +1631,71 @@ function updateHUD() {
     }
 }
 
+function updateRadar() {
+    const radar = document.getElementById('radar');
+    if (!radar || !player) return;
+
+    const ctx = radar.getContext('2d');
+    const w = radar.width;
+    const h = radar.height;
+    const cx = w / 2;
+    const cy = h / 2;
+    const scale = (w * 0.42) / BOUNDS.x;
+
+    ctx.clearRect(0, 0, w, h);
+
+    ctx.fillStyle = 'rgba(5, 16, 30, 0.72)';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.strokeStyle = 'rgba(255, 215, 0, 0.72)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(12, 12, w - 24, h - 24);
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx, 14);
+    ctx.lineTo(cx, h - 14);
+    ctx.moveTo(14, cy);
+    ctx.lineTo(w - 14, cy);
+    ctx.stroke();
+
+    const toRadar = (pos) => ({
+        x: cx + pos.x * scale,
+        y: cy + pos.z * scale
+    });
+
+    const drawDot = (pos, color, radius, stroke = null) => {
+        const p = toRadar(pos);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        if (stroke) {
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = stroke;
+            ctx.stroke();
+        }
+    };
+
+    goalRings.forEach(ring => drawDot(ring.mesh.position, ring.team === Team.STORM ? '#00CED1' : '#FF6B35', 2.2));
+    aiPlayers.forEach(ai => drawDot(ai.mesh.position, ai.team === playerTeam ? 'rgba(0,206,209,0.85)' : 'rgba(255,107,53,0.85)', 2.8));
+    if (quaffle && quaffle.mesh) drawDot(quaffle.mesh.position, '#DC143C', 4, '#FFFFFF');
+    if (snitch && snitch.mesh) {
+        const p = toRadar(snitch.mesh.position);
+        const pulse = 5 + Math.sin(Date.now() * 0.01) * 1.5;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, pulse, 0, Math.PI * 2);
+        ctx.fillStyle = '#FFD700';
+        ctx.fill();
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    drawDot(player.position, '#FFFFFF', 5, playerTeam === Team.STORM ? '#00CED1' : '#FF6B35');
+}
+
 function updateRoleDisplay() {
     const teamIcon = playerTeam === Team.STORM ? '⚡' : '🔥';
     const teamName = playerTeam === Team.STORM ? 'STORM' : 'FLAME';
@@ -1607,6 +1715,17 @@ function updateRoleDisplay() {
             keeper: `🛡️ KEEPER: resta vicino ai tuoi anelli e premi <span class="obj-action">E / AZIONE</span> per bloccare i tiri avversari!`
         };
         hintEl.innerHTML = objectives[playerRole] || '';
+    }
+
+    const actionButton = document.getElementById('actionButton');
+    if (actionButton && playerRole) {
+        const labels = {
+            seeker: 'PRENDI<br>✨',
+            beater: 'COLPISCI<br>⚔️',
+            chaser: 'RUBA<br>🏈',
+            keeper: 'PARA<br>🛡️'
+        };
+        actionButton.innerHTML = labels[playerRole] || 'AZIONE<br>⚔️';
     }
 }
 
@@ -1762,6 +1881,7 @@ function animate() {
     updateGoalRings(delta);
     updateCamera();
     updateHUD();
+    updateRadar();
     checkPlayerActions();
 
     if (renderer && scene && camera) {
