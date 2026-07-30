@@ -1,7 +1,7 @@
-// ===== SKY SPHERES v3.8 - STABLE CONTROLS =====
+// ===== SKY SPHERES v3.9 - AUDIO AND GAME SYSTEMS =====
 // Based on Harry Potter books - Complete Quidditch rules
 
-const GAME_VERSION = '3.8';
+const GAME_VERSION = '3.9';
 
 // ===== ENUMS =====
 const PlayerRole = {
@@ -639,6 +639,8 @@ class AIPlayer {
         gameState.teamScores[this.team] += points;
 
         showNotification(`🎉 ${this.team.toUpperCase()} SEEKER cattura il Boccino! +${points}pts\n\nFINE PARTITA!`);
+        playTone(784, 0.18, 'triangle', 0.18);
+        playTone(1046.5, 0.28, 'triangle', 0.16);
 
         // Game over
         setTimeout(() => {
@@ -675,6 +677,7 @@ class AIPlayer {
             if (ring.checkScore(this.heldQuaffle)) {
                 gameState.teamScores[this.team] += 10;
                 showNotification(`🎯 ${this.team.toUpperCase()} GOAL! +10pts`);
+                playTone(659.25, 0.14, 'square', 0.12);
 
                 this.heldQuaffle.drop(new THREE.Vector3(0, 10, 0));
                 this.heldQuaffle = null;
@@ -762,6 +765,12 @@ let gameStarted = false;
 let gameEnded = false;
 let gameTime = 0;
 let teamScores = { storm: 0, flame: 0 };
+let audioCtx = null;
+let masterGain = null;
+let musicOscillators = [];
+let audioEnabled = false;
+let analyticsEvents = [];
+let capturePromptVisible = false;
 
 // Controls
 let joystickActive = false;
@@ -784,16 +793,42 @@ const BOUNDS = { x: 56, y: 30, z: 56 };
 const SNITCH_UNLOCK_TIME = 45;
 const PLAYER_BASE_SPEED = 0.12;
 const PLAYER_BOOST_SPEED = 0.22;
-const SNITCH_CAPTURE_DISTANCE = 2.0;
+const SNITCH_CAPTURE_DISTANCE = 3.4;
 const AI_SNITCH_CAPTURE_DISTANCE = 0.85;
 const AI_SEEKER_SPEED_FAR = 0.025;
 const AI_SEEKER_SPEED_NEAR = 0.04;
+const SNITCH_PROMPT_DISTANCE = 4.5;
+
+const TRANSLATIONS = {
+    it: {
+        start: 'INIZIA AVVENTURA',
+        systems: 'Sistemi: torneo locale, classifica dispositivo, share, audio e analytics locali.',
+        capture: 'PRENDI',
+        audioOn: 'AUDIO ON',
+        audioOff: 'AUDIO OFF'
+    },
+    en: { start: 'START ADVENTURE', systems: 'Systems: local tournament, device leaderboard, share, audio and local analytics.', capture: 'CATCH', audioOn: 'AUDIO ON', audioOff: 'AUDIO OFF' },
+    es: { start: 'INICIAR AVENTURA', systems: 'Sistemas: torneo local, clasificación del dispositivo, compartir, audio y analíticas locales.', capture: 'ATRAPAR', audioOn: 'AUDIO ON', audioOff: 'AUDIO OFF' },
+    fr: { start: 'COMMENCER', systems: 'Systèmes: tournoi local, classement appareil, partage, audio et analytics locaux.', capture: 'PRENDRE', audioOn: 'AUDIO ON', audioOff: 'AUDIO OFF' },
+    de: { start: 'ABENTEUER STARTEN', systems: 'Systeme: lokales Turnier, Geräte-Bestenliste, Teilen, Audio und lokale Analytik.', capture: 'FANGEN', audioOn: 'AUDIO ON', audioOff: 'AUDIO OFF' }
+};
+
+let currentLang = localStorage.getItem('skySpheresLang') || 'it';
+let tournamentMode = localStorage.getItem('skySpheresTournament') === '1';
 
 // ===== API =====
 window.gameAPI = {
     startCeremony: startCeremony,
     selectRole: selectRole,
-    skipCeremony: skipCeremony
+    skipCeremony: skipCeremony,
+    toggleAudio: toggleAudio,
+    setLanguage: setLanguage,
+    toggleTournament: toggleTournament,
+    showLeaderboard: showLeaderboard,
+    shareGame: shareGame,
+    showMatchmaking: showMatchmaking,
+    showStore: showStore,
+    showAnalytics: showAnalytics
 };
 
 function startCeremony() {
@@ -821,6 +856,9 @@ function selectRole(role) {
 
     const roleSelection = document.getElementById('roleSelection');
     if (roleSelection) roleSelection.classList.remove('visible');
+    initAudio();
+    if (audioEnabled && audioCtx.state === 'suspended') audioCtx.resume();
+    trackEvent('role_selected', { role, team: playerTeam });
 
     setTimeout(() => {
         const ceremonyScreen = document.getElementById('ceremonyScreen');
@@ -836,6 +874,7 @@ function skipCeremony() {
 
     const ceremonyScreen = document.getElementById('ceremonyScreen');
     if (ceremonyScreen) ceremonyScreen.style.display = 'none';
+    trackEvent('ceremony_skipped', { role: playerRole, team: playerTeam });
     initGame();
 }
 
@@ -913,6 +952,8 @@ function initGame() {
     setupControls();
 
     gameStarted = true;
+    trackEvent('game_start', { role: playerRole, team: playerTeam, tournamentMode });
+    if (audioEnabled) startMusic();
     updateVersionDisplay();
     updateRoleDisplay();
     animate();
@@ -922,8 +963,167 @@ function updateVersionDisplay() {
     const badge = document.getElementById('versionBadge');
     if (badge) badge.textContent = `v${GAME_VERSION}`;
     const subtitle = document.getElementById('subtitle');
-    if (subtitle) subtitle.textContent = `v${GAME_VERSION} - Stable Controls`;
+    if (subtitle) subtitle.textContent = `v${GAME_VERSION} - Audio and Game Systems`;
     document.title = `Sky Spheres v${GAME_VERSION}`;
+    applyLanguage();
+}
+
+function trackEvent(name, data = {}) {
+    analyticsEvents.push({ name, data, time: Date.now(), gameTime: Math.round(gameTime) });
+    if (analyticsEvents.length > 80) analyticsEvents.shift();
+    localStorage.setItem('skySpheresAnalytics', JSON.stringify(analyticsEvents));
+}
+
+function initAudio() {
+    if (audioCtx) return;
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    audioCtx = new AudioContext();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.045;
+    masterGain.connect(audioCtx.destination);
+}
+
+function playTone(freq, duration = 0.16, type = 'sine', volume = 0.12) {
+    if (!audioEnabled || !audioCtx || !masterGain) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.frequency.value = freq;
+    osc.type = type;
+    gain.gain.value = volume;
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+}
+
+function startMusic() {
+    if (!audioEnabled || !audioCtx || musicOscillators.length > 0) return;
+    [146.83, 220, 293.66].forEach((freq, index) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = index === 0 ? 'triangle' : 'sine';
+        osc.frequency.value = freq;
+        gain.gain.value = index === 0 ? 0.12 : 0.045;
+        osc.connect(gain);
+        gain.connect(masterGain);
+        osc.start();
+        musicOscillators.push({ osc, gain });
+    });
+}
+
+function stopMusic() {
+    musicOscillators.forEach(({ osc }) => osc.stop());
+    musicOscillators = [];
+}
+
+function toggleAudio() {
+    initAudio();
+    if (!audioCtx) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    audioEnabled = !audioEnabled;
+    const btn = document.getElementById('audioButton');
+    if (btn) btn.textContent = audioEnabled ? t('audioOn') : t('audioOff');
+    if (audioEnabled) {
+        startMusic();
+        playTone(523.25, 0.12, 'triangle', 0.16);
+    } else {
+        stopMusic();
+    }
+    trackEvent('audio_toggle', { enabled: audioEnabled });
+}
+
+function t(key) {
+    return (TRANSLATIONS[currentLang] || TRANSLATIONS.it)[key] || TRANSLATIONS.it[key] || key;
+}
+
+function setLanguage(lang) {
+    if (!TRANSLATIONS[lang]) return;
+    currentLang = lang;
+    localStorage.setItem('skySpheresLang', lang);
+    applyLanguage();
+    trackEvent('language_change', { lang });
+}
+
+function applyLanguage() {
+    const startButton = document.getElementById('startButton');
+    if (startButton) startButton.textContent = `🎮 ${t('start')}`;
+    const systems = document.getElementById('systemsStatus');
+    if (systems) systems.textContent = t('systems');
+    const langSelect = document.getElementById('languageSelect');
+    if (langSelect) langSelect.value = currentLang;
+    const audioButton = document.getElementById('audioButton');
+    if (audioButton) audioButton.textContent = audioEnabled ? t('audioOn') : t('audioOff');
+}
+
+function toggleTournament() {
+    tournamentMode = !tournamentMode;
+    localStorage.setItem('skySpheresTournament', tournamentMode ? '1' : '0');
+    const btn = document.getElementById('tournamentButton');
+    if (btn) btn.textContent = tournamentMode ? 'TORNEO ON' : 'TORNEO OFF';
+    showNotification(tournamentMode ? '🏆 Tournament mode locale attivo' : '🏆 Tournament mode locale disattivo');
+    trackEvent('tournament_toggle', { enabled: tournamentMode });
+}
+
+function getLeaderboard() {
+    try {
+        return JSON.parse(localStorage.getItem('skySpheresLeaderboard') || '[]');
+    } catch {
+        return [];
+    }
+}
+
+function saveLeaderboardEntry(reason) {
+    const entries = getLeaderboard();
+    entries.push({
+        score: teamScores[playerTeam] || 0,
+        role: playerRole,
+        team: playerTeam,
+        time: Math.round(gameTime),
+        reason,
+        version: GAME_VERSION,
+        date: new Date().toISOString()
+    });
+    entries.sort((a, b) => b.score - a.score || a.time - b.time);
+    localStorage.setItem('skySpheresLeaderboard', JSON.stringify(entries.slice(0, 10)));
+}
+
+function showLeaderboard() {
+    const entries = getLeaderboard();
+    const body = entries.length
+        ? entries.map((e, i) => `${i + 1}. ${e.score} pt - ${e.role} - ${e.time}s`).join('\n')
+        : 'Nessun risultato locale ancora registrato.';
+    alert(`Leaderboard locale\n\n${body}\n\nGlobale: richiede backend/account.`);
+    trackEvent('leaderboard_open');
+}
+
+function showMatchmaking() {
+    alert('Matchmaking\n\nDisponibile ora: partita locale contro AI.\n\nPer matchmaking reale servono backend, account, lobby e sincronizzazione realtime.');
+    trackEvent('matchmaking_open');
+}
+
+function showStore() {
+    alert('Monetizzazione / IAP\n\nFront-end pronto per pacchetti cosmetici, modalità premium e tornei.\n\nAcquisti reali richiedono integrazione Google Play Billing/App Store e backend di verifica.');
+    trackEvent('store_open');
+}
+
+function showAnalytics() {
+    const events = analyticsEvents.length ? analyticsEvents : JSON.parse(localStorage.getItem('skySpheresAnalytics') || '[]');
+    const latest = events.slice(-8).map(e => `${e.name} @ ${e.gameTime || 0}s`).join('\n') || 'Nessun evento ancora.';
+    alert(`Analytics locali\n\nEventi registrati: ${events.length}\n\n${latest}\n\nTracking remoto: richiede endpoint analytics/privacy policy.`);
+}
+
+async function shareGame() {
+    const url = `https://amedeoclap.github.io/quidditch/?v=${GAME_VERSION}`;
+    const text = `Prova Sky Spheres v${GAME_VERSION}`;
+    if (navigator.share) {
+        await navigator.share({ title: 'Sky Spheres', text, url });
+    } else {
+        await navigator.clipboard?.writeText(url);
+        showNotification('🔗 Link copiato per invito/share');
+    }
+    trackEvent('share');
 }
 
 function createSkyDecor() {
@@ -1263,6 +1463,7 @@ function setupControls() {
     const joystick = document.getElementById('joystick');
     const boostButton = document.getElementById('boostButton');
     const actionButton = document.getElementById('actionButton');
+    const snitchCapturePrompt = document.getElementById('snitchCapturePrompt');
     const upButton = document.getElementById('upButton');
     const downButton = document.getElementById('downButton');
     const cameraLeftButton = document.getElementById('cameraLeftButton');
@@ -1378,6 +1579,18 @@ function setupControls() {
         () => {
             actionPressed = false;
             actionButton.style.transform = 'scale(1)';
+        }
+    );
+
+    bindPress(
+        snitchCapturePrompt,
+        () => {
+            actionPressed = true;
+            snitchCapturePrompt.style.transform = 'translateX(-50%) scale(0.95)';
+        },
+        () => {
+            actionPressed = false;
+            snitchCapturePrompt.style.transform = 'translateX(-50%) scale(1)';
         }
     );
 
@@ -1701,7 +1914,31 @@ function updateHUD() {
         }
     }
 
+    updateSnitchCapturePrompt();
     updateSnitchPointer();
+}
+
+function updateSnitchCapturePrompt() {
+    const prompt = document.getElementById('snitchCapturePrompt');
+    const actionButton = document.getElementById('actionButton');
+    if (!prompt || !player || !snitch || !snitch.mesh) return;
+
+    const canCatch = playerRole === PlayerRole.SEEKER
+        && gameTime >= SNITCH_UNLOCK_TIME
+        && player.position.distanceTo(snitch.mesh.position) <= SNITCH_PROMPT_DISTANCE
+        && !gameEnded;
+
+    prompt.classList.toggle('visible', canCatch);
+    if (actionButton && playerRole === PlayerRole.SEEKER) {
+        actionButton.classList.toggle('catch-ready', canCatch);
+        actionButton.innerHTML = canCatch ? `${t('capture')}<br>✨` : 'CERCA<br>✨';
+    }
+
+    if (canCatch && !capturePromptVisible) {
+        playTone(987.77, 0.12, 'triangle', 0.14);
+        trackEvent('snitch_prompt_visible');
+    }
+    capturePromptVisible = canCatch;
 }
 
 function updateSnitchPointer() {
@@ -1852,6 +2089,9 @@ function checkPlayerActions() {
             gameEnded = true;
             teamScores[playerTeam] += 150;
             showNotification(`🎉 HAI CATTURATO IL BOCCINO D'ORO! +150pts\n\nFINE PARTITA!`);
+            playTone(784, 0.18, 'triangle', 0.18);
+            playTone(1174.66, 0.32, 'triangle', 0.16);
+            trackEvent('snitch_captured', { score: teamScores[playerTeam], time: Math.round(gameTime) });
             actionPressed = false;
 
             setTimeout(() => {
@@ -1873,6 +2113,8 @@ function checkPlayerActions() {
                     quaffle.holder = { mesh: player, team: playerTeam };
                     playerHeldQuaffle = quaffle;
                     showNotification(`🏈 HAI RUBATO LA QUAFFLE!`);
+                    playTone(440, 0.1, 'square', 0.1);
+                    trackEvent('quaffle_stolen');
                     actionPressed = false;
                 }
             } else if (!quaffle.held) {
@@ -1883,6 +2125,8 @@ function checkPlayerActions() {
                     quaffle.holder = { mesh: player, team: playerTeam };
                     playerHeldQuaffle = quaffle;
                     showNotification(`🏈 HAI PRESO LA QUAFFLE! Vai agli anelli avversari!`);
+                    playTone(392, 0.1, 'triangle', 0.1);
+                    trackEvent('quaffle_pickup');
                 }
             }
         } else {
@@ -1894,6 +2138,8 @@ function checkPlayerActions() {
                 if (ring.checkScore(playerHeldQuaffle)) {
                     teamScores[playerTeam] += 10;
                     showNotification(`🎯 GOAL! +10pts`);
+                    playTone(659.25, 0.14, 'square', 0.13);
+                    trackEvent('goal', { score: teamScores[playerTeam] });
 
                     playerHeldQuaffle.drop(new THREE.Vector3(0, 10, 0));
                     playerHeldQuaffle = null;
@@ -1923,6 +2169,7 @@ function checkPlayerActions() {
 
                     bludger.redirectToTarget(nearest.mesh.position);
                     showNotification(`⚔️ HAI COLPITO IL BLUDGER!`);
+                    playTone(220, 0.1, 'sawtooth', 0.12);
                     actionPressed = false; // Prevent spam
                 }
             }
@@ -1938,6 +2185,7 @@ function checkPlayerActions() {
             }
             quaffle.drop(player.position);
             showNotification(`🛡️ HAI BLOCCATO IL TIRO!`);
+            playTone(330, 0.12, 'square', 0.12);
             actionPressed = false;
         }
     }
@@ -1953,6 +2201,9 @@ function showNotification(message) {
 }
 
 function showGameOver(scores) {
+    saveLeaderboardEntry('game_over');
+    stopMusic();
+    trackEvent('game_over', { storm: scores.storm, flame: scores.flame, role: playerRole });
     const winner = scores.storm > scores.flame ? 'STORM' : 'FLAME';
     const winnerIcon = scores.storm > scores.flame ? '⚡' : '🔥';
 
@@ -2022,3 +2273,9 @@ window.addEventListener('orientationchange', () => setTimeout(resizeGame, 250));
 if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', resizeGame);
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    applyLanguage();
+    const tournamentButton = document.getElementById('tournamentButton');
+    if (tournamentButton) tournamentButton.textContent = tournamentMode ? 'TORNEO ON' : 'TORNEO OFF';
+});
