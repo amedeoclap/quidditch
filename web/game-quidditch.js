@@ -1,7 +1,7 @@
-// ===== SKY SPHERES v3.6 - AERIAL PACING =====
+// ===== SKY SPHERES v3.7 - VISUAL CLARITY =====
 // Based on Harry Potter books - Complete Quidditch rules
 
-const GAME_VERSION = '3.6';
+const GAME_VERSION = '3.7';
 
 // ===== ENUMS =====
 const PlayerRole = {
@@ -922,7 +922,7 @@ function updateVersionDisplay() {
     const badge = document.getElementById('versionBadge');
     if (badge) badge.textContent = `v${GAME_VERSION}`;
     const subtitle = document.getElementById('subtitle');
-    if (subtitle) subtitle.textContent = `v${GAME_VERSION} - Mobile Polish`;
+    if (subtitle) subtitle.textContent = `v${GAME_VERSION} - Visual Clarity`;
     document.title = `Sky Spheres v${GAME_VERSION}`;
 }
 
@@ -1024,6 +1024,33 @@ function createArena() {
         ]);
         scene.add(new THREE.Line(lane, lineMat));
     });
+
+    const aerialMat = new THREE.LineBasicMaterial({
+        color: 0x8FEAFF,
+        transparent: true,
+        opacity: 0.24
+    });
+
+    [8, 16, 24].forEach(y => {
+        const altitudeRing = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(-BOUNDS.x, y, -BOUNDS.z),
+            new THREE.Vector3(BOUNDS.x, y, -BOUNDS.z),
+            new THREE.Vector3(BOUNDS.x, y, BOUNDS.z),
+            new THREE.Vector3(-BOUNDS.x, y, BOUNDS.z),
+            new THREE.Vector3(-BOUNDS.x, y, -BOUNDS.z)
+        ]);
+        scene.add(new THREE.Line(altitudeRing, aerialMat));
+    });
+
+    [-42, -14, 14, 42].forEach(x => {
+        [-42, 0, 42].forEach(z => {
+            const altitudeGuide = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(x, 2, z),
+                new THREE.Vector3(x, BOUNDS.y, z)
+            ]);
+            scene.add(new THREE.Line(altitudeGuide, aerialMat));
+        });
+    });
 }
 
 function createPlayer() {
@@ -1105,10 +1132,10 @@ function createSnitch() {
     snitch.mesh.add(rightWing);
 
     snitchIndicator = createBillboardLabel('▼ BOCCINO', '#FFD700', '#111111');
-    snitchIndicator.position.set(0, 3.2, 0);
+    snitchIndicator.position.set(0, 3.8, 0);
     snitch.mesh.add(snitchIndicator);
 
-    const light = new THREE.PointLight(0xFFD700, 5, 42);
+    const light = new THREE.PointLight(0xFFD700, 7, 56);
     snitch.mesh.add(light);
 
     const trailMat = new THREE.MeshBasicMaterial({
@@ -1116,12 +1143,12 @@ function createSnitch() {
         transparent: true,
         opacity: 0.55
     });
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 14; i++) {
         const trailDot = new THREE.Mesh(
-            new THREE.SphereGeometry(0.18 + i * 0.025, 10, 8),
+            new THREE.SphereGeometry(0.2 + i * 0.022, 10, 8),
             trailMat.clone()
         );
-        trailDot.material.opacity = 0.42 - i * 0.035;
+        trailDot.material.opacity = 0.48 - i * 0.028;
         trailDot.position.copy(snitch.mesh.position);
         scene.add(trailDot);
         snitchTrail.push(trailDot);
@@ -1615,8 +1642,15 @@ function updateCamera() {
     if (!player) return;
 
     cameraYaw += cameraInput * 0.045;
-    const followDistance = 24;
-    const followHeight = 12;
+    const moving = playerVelocity && playerVelocity.length() > 0.035;
+    if (moving && cameraInput === 0) {
+        const movementYaw = Math.atan2(playerVelocity.x, playerVelocity.z);
+        const yawDelta = Math.atan2(Math.sin(movementYaw - cameraYaw), Math.cos(movementYaw - cameraYaw));
+        cameraYaw += yawDelta * 0.018;
+    }
+
+    const followDistance = 28;
+    const followHeight = 13.5;
     const offset = new THREE.Vector3(
         Math.sin(cameraYaw) * followDistance,
         followHeight,
@@ -1624,8 +1658,42 @@ function updateCamera() {
     );
     const targetPos = new THREE.Vector3().copy(player.position).add(offset);
 
-    camera.position.lerp(targetPos, 0.09);
-    camera.lookAt(player.position.x, player.position.y + 2.4, player.position.z);
+    const focus = getCameraFocusTarget();
+    const lookTarget = player.position.clone().add(new THREE.Vector3(0, 2.8, 0));
+    if (focus) {
+        lookTarget.lerp(focus.position, 0.28);
+    }
+
+    camera.position.lerp(targetPos, 0.075);
+    camera.lookAt(lookTarget.x, lookTarget.y, lookTarget.z);
+}
+
+function getCameraFocusTarget() {
+    if (playerRole === PlayerRole.CHASER) {
+        if (playerHeldQuaffle) {
+            const opponentTeam = playerTeam === Team.STORM ? Team.FLAME : Team.STORM;
+            const opponentRings = goalRings.filter(r => r.team === opponentTeam);
+            return opponentRings[Math.floor(opponentRings.length / 2)]?.mesh || null;
+        }
+        if (quaffle && quaffle.mesh) return quaffle.mesh;
+    }
+
+    if (playerRole === PlayerRole.SEEKER && snitch && snitch.mesh) return snitch.mesh;
+
+    if (playerRole === PlayerRole.BEATER && bludgers.length > 0) {
+        let nearest = bludgers[0];
+        let minDist = player.position.distanceTo(nearest.mesh.position);
+        bludgers.forEach(bludger => {
+            const dist = player.position.distanceTo(bludger.mesh.position);
+            if (dist < minDist) {
+                minDist = dist;
+                nearest = bludger;
+            }
+        });
+        return nearest.mesh;
+    }
+
+    return null;
 }
 
 function updateHUD() {
@@ -1663,6 +1731,32 @@ function updateHUD() {
             hintEl.innerHTML = `🎯 SEEKER: avvicinati al <b>Boccino d'Oro</b> e premi <span class="obj-action">E / AZIONE</span> per vincere!`;
         }
     }
+
+    updateSnitchPointer();
+}
+
+function updateSnitchPointer() {
+    const pointer = document.getElementById('snitchPointer');
+    if (!pointer || !player || !snitch || !snitch.mesh || !camera) return;
+
+    const screenPos = snitch.mesh.position.clone().project(camera);
+    const visible = screenPos.z > -1 && screenPos.z < 1 && Math.abs(screenPos.x) < 0.86 && Math.abs(screenPos.y) < 0.82;
+    const dist = player.position.distanceTo(snitch.mesh.position);
+
+    pointer.classList.toggle('visible', !visible);
+    pointer.textContent = `BOCCINO ${dist.toFixed(0)}m`;
+
+    if (visible) return;
+
+    const angle = Math.atan2(screenPos.y, screenPos.x);
+    const margin = 58;
+    const x = Math.max(margin, Math.min(window.innerWidth - margin, (screenPos.x * 0.5 + 0.5) * window.innerWidth));
+    const y = Math.max(margin + 12, Math.min(window.innerHeight - margin, (-screenPos.y * 0.5 + 0.5) * window.innerHeight));
+
+    pointer.style.left = `${x}px`;
+    pointer.style.top = `${y}px`;
+    pointer.style.transform = 'translate(-50%, -50%)';
+    pointer.style.setProperty('--pointer-angle', `${angle}rad`);
 }
 
 function updateRadar() {
@@ -1701,10 +1795,13 @@ function updateRadar() {
 
     const drawDot = (pos, color, radius, stroke = null) => {
         const p = toRadar(pos);
+        const altitude = Math.max(0.45, Math.min(1, pos.y / BOUNDS.y));
         ctx.beginPath();
         ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
         ctx.fillStyle = color;
+        ctx.globalAlpha = altitude;
         ctx.fill();
+        ctx.globalAlpha = 1;
         if (stroke) {
             ctx.lineWidth = 2;
             ctx.strokeStyle = stroke;
@@ -1728,6 +1825,11 @@ function updateRadar() {
     }
 
     drawDot(player.position, '#FFFFFF', 5, playerTeam === Team.STORM ? '#00CED1' : '#FF6B35');
+
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.font = '10px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText(`Y ${player.position.y.toFixed(0)}m`, 14, h - 8);
 }
 
 function updateRoleDisplay() {
