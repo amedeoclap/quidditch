@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Sky Spheres v3.8 - Stable Controls</title>
+    <title>Sky Spheres v3.9 - Audio and Game Systems</title>
     <style>
         * {
             margin: 0;
@@ -104,6 +104,36 @@
 
         .menu-button:active {
             transform: translateY(0);
+        }
+
+        .systems-panel {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
+            max-width: 720px;
+        }
+
+        .system-button, #languageSelect {
+            border: 1px solid rgba(255, 215, 0, 0.42);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            padding: 10px 12px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        #languageSelect {
+            color: #111827;
+            background: rgba(255,255,255,0.9);
+        }
+
+        #systemsStatus {
+            flex-basis: 100%;
+            color: rgba(255,255,255,0.82);
+            font-size: 13px;
         }
 
         /* Ceremony Screen */
@@ -365,6 +395,43 @@
             transform: rotate(var(--pointer-angle, 0rad));
             color: #FFF2A8;
             text-shadow: 0 0 10px #FFD700;
+        }
+
+        #snitchCapturePrompt {
+            position: fixed;
+            left: 50%;
+            bottom: max(118px, calc(env(safe-area-inset-bottom) + 104px));
+            transform: translateX(-50%);
+            z-index: 260;
+            display: none;
+            min-width: 148px;
+            padding: 14px 20px;
+            border-radius: 999px;
+            border: 2px solid rgba(255,255,255,0.95);
+            background: linear-gradient(135deg, #FFD700, #FF8C00);
+            color: #111;
+            font-size: 20px;
+            font-weight: 900;
+            box-shadow: 0 0 24px rgba(255, 215, 0, 0.8);
+            text-align: center;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        #snitchCapturePrompt.visible {
+            display: block;
+            animation: catchPulse 0.8s infinite alternate;
+        }
+
+        .action-button.catch-ready {
+            background: linear-gradient(135deg, #FFD700, #FF8C00) !important;
+            color: #111;
+            box-shadow: 0 0 24px rgba(255, 215, 0, 0.8);
+        }
+
+        @keyframes catchPulse {
+            from { transform: translateX(-50%) scale(1); }
+            to { transform: translateX(-50%) scale(1.08); }
         }
 
         /* IMPROVED Mobile Controls */
@@ -781,8 +848,25 @@
     <!-- Start Screen -->
     <div id="startScreen">
         <div id="title">⚡ SKY SPHERES ⚡</div>
-        <div id="subtitle">v3.8 - Stable Controls</div>
-        <button class="menu-button" onclick="window.gameAPI.startCeremony()">🎮 INIZIA AVVENTURA</button>
+        <div id="subtitle">v3.9 - Audio and Game Systems</div>
+        <button id="startButton" class="menu-button" onclick="window.gameAPI.startCeremony()">🎮 INIZIA AVVENTURA</button>
+        <div class="systems-panel">
+            <button id="audioButton" class="system-button" onclick="window.gameAPI.toggleAudio()">AUDIO OFF</button>
+            <button id="tournamentButton" class="system-button" onclick="window.gameAPI.toggleTournament()">TORNEO OFF</button>
+            <button class="system-button" onclick="window.gameAPI.showMatchmaking()">MATCHMAKING</button>
+            <button class="system-button" onclick="window.gameAPI.showLeaderboard()">LEADERBOARD</button>
+            <button class="system-button" onclick="window.gameAPI.showStore()">STORE / IAP</button>
+            <button class="system-button" onclick="window.gameAPI.shareGame()">SHARE / INVITA</button>
+            <button class="system-button" onclick="window.gameAPI.showAnalytics()">ANALYTICS</button>
+            <select id="languageSelect" onchange="window.gameAPI.setLanguage(this.value)">
+                <option value="it">IT</option>
+                <option value="en">EN</option>
+                <option value="es">ES</option>
+                <option value="fr">FR</option>
+                <option value="de">DE</option>
+            </select>
+            <div id="systemsStatus">Sistemi: torneo locale, classifica dispositivo, share, audio e analytics locali.</div>
+        </div>
         <p style="margin-top: 25px; font-size: 16px; opacity: 0.9; max-width: 650px; text-align: center; padding: 0 20px;">
             ⚡ VERO QUIDDITCH da Harry Potter!<br>
             💥 Bludger AGGRESSIVI che attaccano e stunnano<br>
@@ -795,7 +879,7 @@
             <b>🎮 CONTROLLI</b><br>
             <b>PC:</b> WASD = muovi · SPAZIO = su · CTRL = giù · Q/R = camera · SHIFT = boost · <b>E = AZIONE</b><br>
             <b>Mobile:</b> Joystick · ▲▼ = su/giù · ◀ ▶ camera · BOOST · <b>AZIONE ⚔️</b><br>
-            <span style="opacity:0.8;">L'<b>AZIONE</b> serve a Beater (colpire), Chaser (rubare) e Keeper (bloccare)</span>
+            <span style="opacity:0.8;">Per il Seeker compare <b>PRENDI</b> quando il Boccino è abbastanza vicino.</span>
         </div>
     </div>
 
@@ -843,8 +927,9 @@
         <div id="objectiveHint">Preparazione...</div>
         <div id="distance">🎯 --m</div>
         <canvas id="radar" width="160" height="160"></canvas>
-        <div id="versionBadge">v3.8</div>
+        <div id="versionBadge">v3.9</div>
         <div id="snitchPointer">BOCCINO</div>
+        <div id="snitchCapturePrompt">PRENDI ✨</div>
         <div id="cameraHint">Camera: ◀ ▶ / Q R</div>
     </div>
 
