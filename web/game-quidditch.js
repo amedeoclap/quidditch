@@ -1,7 +1,7 @@
-// ===== SKY SPHERES v3.7 - VISUAL CLARITY =====
+// ===== SKY SPHERES v3.8 - STABLE CONTROLS =====
 // Based on Harry Potter books - Complete Quidditch rules
 
-const GAME_VERSION = '3.7';
+const GAME_VERSION = '3.8';
 
 // ===== ENUMS =====
 const PlayerRole = {
@@ -922,7 +922,7 @@ function updateVersionDisplay() {
     const badge = document.getElementById('versionBadge');
     if (badge) badge.textContent = `v${GAME_VERSION}`;
     const subtitle = document.getElementById('subtitle');
-    if (subtitle) subtitle.textContent = `v${GAME_VERSION} - Visual Clarity`;
+    if (subtitle) subtitle.textContent = `v${GAME_VERSION} - Stable Controls`;
     document.title = `Sky Spheres v${GAME_VERSION}`;
 }
 
@@ -1295,11 +1295,18 @@ function setupControls() {
         const deltaY = touch.clientY - startY;
         const distance = Math.min(Math.sqrt(deltaX * deltaX + deltaY * deltaY), 40);
         const angle = Math.atan2(deltaY, deltaX);
+        const normalized = distance / 40;
 
         handle.style.transform = `translate(calc(-50% + ${Math.cos(angle) * distance}px), calc(-50% + ${Math.sin(angle) * distance}px))`;
 
-        joystickDirection.x = Math.cos(angle) * (distance / 40);
-        joystickDirection.y = Math.sin(angle) * (distance / 40);
+        if (normalized < 0.12) {
+            joystickDirection.x = 0;
+            joystickDirection.y = 0;
+            return;
+        }
+
+        joystickDirection.x = Math.cos(angle) * normalized;
+        joystickDirection.y = Math.sin(angle) * normalized;
     };
 
     const stopJoystick = (e) => {
@@ -1641,16 +1648,10 @@ function updateGoalRings(delta) {
 function updateCamera() {
     if (!player) return;
 
-    cameraYaw += cameraInput * 0.045;
-    const moving = playerVelocity && playerVelocity.length() > 0.035;
-    if (moving && cameraInput === 0) {
-        const movementYaw = Math.atan2(playerVelocity.x, playerVelocity.z);
-        const yawDelta = Math.atan2(Math.sin(movementYaw - cameraYaw), Math.cos(movementYaw - cameraYaw));
-        cameraYaw += yawDelta * 0.018;
-    }
+    cameraYaw += cameraInput * 0.032;
 
-    const followDistance = 28;
-    const followHeight = 13.5;
+    const followDistance = 30;
+    const followHeight = 14;
     const offset = new THREE.Vector3(
         Math.sin(cameraYaw) * followDistance,
         followHeight,
@@ -1658,42 +1659,10 @@ function updateCamera() {
     );
     const targetPos = new THREE.Vector3().copy(player.position).add(offset);
 
-    const focus = getCameraFocusTarget();
     const lookTarget = player.position.clone().add(new THREE.Vector3(0, 2.8, 0));
-    if (focus) {
-        lookTarget.lerp(focus.position, 0.28);
-    }
 
-    camera.position.lerp(targetPos, 0.075);
+    camera.position.lerp(targetPos, 0.055);
     camera.lookAt(lookTarget.x, lookTarget.y, lookTarget.z);
-}
-
-function getCameraFocusTarget() {
-    if (playerRole === PlayerRole.CHASER) {
-        if (playerHeldQuaffle) {
-            const opponentTeam = playerTeam === Team.STORM ? Team.FLAME : Team.STORM;
-            const opponentRings = goalRings.filter(r => r.team === opponentTeam);
-            return opponentRings[Math.floor(opponentRings.length / 2)]?.mesh || null;
-        }
-        if (quaffle && quaffle.mesh) return quaffle.mesh;
-    }
-
-    if (playerRole === PlayerRole.SEEKER && snitch && snitch.mesh) return snitch.mesh;
-
-    if (playerRole === PlayerRole.BEATER && bludgers.length > 0) {
-        let nearest = bludgers[0];
-        let minDist = player.position.distanceTo(nearest.mesh.position);
-        bludgers.forEach(bludger => {
-            const dist = player.position.distanceTo(bludger.mesh.position);
-            if (dist < minDist) {
-                minDist = dist;
-                nearest = bludger;
-            }
-        });
-        return nearest.mesh;
-    }
-
-    return null;
 }
 
 function updateHUD() {
