@@ -1,7 +1,7 @@
-// ===== SKY SPHERES v3.5 - MOBILE POLISH =====
+// ===== SKY SPHERES v3.6 - AERIAL PACING =====
 // Based on Harry Potter books - Complete Quidditch rules
 
-const GAME_VERSION = '3.5';
+const GAME_VERSION = '3.6';
 
 // ===== ENUMS =====
 const PlayerRole = {
@@ -205,14 +205,13 @@ class Bludger {
             this.targetChangeTimer = 3 + Math.random() * 2;
         }
 
-        // Chase target AGGRESSIVELY
+        // Chase target with pressure, but leave enough time to react on mobile.
         if (this.target && this.target.mesh) {
             const dir = new THREE.Vector3()
                 .subVectors(this.target.mesh.position, this.mesh.position)
                 .normalize();
 
-            // Bludger is FAST and aggressive
-            this.velocity.add(dir.multiplyScalar(0.025));
+            this.velocity.add(dir.multiplyScalar(0.014));
 
             // Check collision with target
             const dist = this.mesh.position.distanceTo(this.target.mesh.position);
@@ -228,8 +227,8 @@ class Bludger {
         this.mesh.position.add(this.velocity);
 
         // Speed limit
-        if (this.velocity.length() > 0.4) {
-            this.velocity.normalize().multiplyScalar(0.4);
+        if (this.velocity.length() > 0.24) {
+            this.velocity.normalize().multiplyScalar(0.24);
         }
 
         // Bounds with bounce
@@ -281,7 +280,7 @@ class Bludger {
             .subVectors(targetPosition, this.mesh.position)
             .normalize();
 
-        this.velocity.copy(dir.multiplyScalar(0.6)); // Fast redirect
+        this.velocity.copy(dir.multiplyScalar(0.35));
         this.targetChangeTimer = 2; // Briefly chase new direction
     }
 }
@@ -340,6 +339,10 @@ class AIPlayer {
 
         this.heldQuaffle = null;
         this.actionCooldown = 0;
+        this.weavePhase = Math.random() * Math.PI * 2;
+        this.laneOffset = (Math.random() < 0.5 ? -1 : 1) * (14 + Math.random() * 28);
+        this.altitudeBias = 6 + Math.random() * 20;
+        this.goalTargetIndex = Math.floor(Math.random() * 3);
         this.patrolTarget = this.createPatrolTarget();
 
         // Starting positions based on role
@@ -359,10 +362,37 @@ class AIPlayer {
 
     createPatrolTarget() {
         return new THREE.Vector3(
-            (Math.random() - 0.5) * BOUNDS.x * 1.65,
-            8 + Math.random() * 14,
-            (Math.random() - 0.5) * BOUNDS.z * 1.65
+            (Math.random() * 2 - 1) * BOUNDS.x * 0.92,
+            5 + Math.random() * (BOUNDS.y - 7),
+            (Math.random() * 2 - 1) * BOUNDS.z * 0.92
         );
+    }
+
+    clampToField(vector) {
+        vector.x = Math.max(-BOUNDS.x, Math.min(BOUNDS.x, vector.x));
+        vector.y = Math.max(3, Math.min(BOUNDS.y, vector.y));
+        vector.z = Math.max(-BOUNDS.z, Math.min(BOUNDS.z, vector.z));
+        return vector;
+    }
+
+    moveToward(target, force) {
+        const dir = new THREE.Vector3()
+            .subVectors(this.clampToField(target), this.mesh.position);
+
+        if (dir.lengthSq() === 0) return;
+        this.velocity.add(dir.normalize().multiplyScalar(force));
+    }
+
+    aerialOffset(time, xScale = 1, yScale = 1, zScale = 1) {
+        return new THREE.Vector3(
+            Math.sin(time * 0.85 + this.weavePhase) * 16 * xScale + this.laneOffset * 0.35,
+            Math.cos(time * 0.65 + this.weavePhase) * 6 * yScale,
+            Math.cos(time * 0.75 + this.weavePhase) * 14 * zScale
+        );
+    }
+
+    getAerialApproachTarget(basePosition, time, xScale = 1, yScale = 1, zScale = 1) {
+        return this.clampToField(basePosition.clone().add(this.aerialOffset(time, xScale, yScale, zScale)));
     }
 
     createNameTag(scene) {
@@ -429,19 +459,16 @@ class AIPlayer {
                 break;
         }
 
-        if (this.velocity.length() < 0.03 && this.role !== PlayerRole.KEEPER) {
+        if (this.role !== PlayerRole.KEEPER) {
             if (this.mesh.position.distanceTo(this.patrolTarget) < 6) {
                 this.patrolTarget = this.createPatrolTarget();
             }
-            const patrolDir = new THREE.Vector3()
-                .subVectors(this.patrolTarget, this.mesh.position)
-                .normalize();
-            this.velocity.add(patrolDir.multiplyScalar(0.04));
+            this.moveToward(this.patrolTarget, this.velocity.length() < 0.04 ? 0.035 : 0.012);
         }
 
         // Physics
         this.mesh.position.add(this.velocity);
-        this.velocity.multiplyScalar(0.87);
+        this.velocity.multiplyScalar(0.80);
 
         // Bounds
         const BOUNDS = { x: 56, y: 30, z: 56 };
@@ -477,11 +504,15 @@ class AIPlayer {
             return;
         }
 
+        const time = Date.now() * 0.001;
+        const chaseTarget = snitch.position.clone().add(new THREE.Vector3(
+            Math.sin(time * 1.15 + this.weavePhase) * 18,
+            Math.cos(time * 0.8 + this.weavePhase) * 7,
+            Math.cos(time * 1.05 + this.weavePhase) * 18
+        ));
+
         const speed = dist < 15 ? AI_SEEKER_SPEED_NEAR : AI_SEEKER_SPEED_FAR;
-        const dir = new THREE.Vector3()
-            .subVectors(snitch.position, this.mesh.position)
-            .normalize();
-        this.velocity.add(dir.multiplyScalar(speed));
+        this.moveToward(chaseTarget, speed);
     }
 
     updateBeater(gameState, delta) {
@@ -508,12 +539,10 @@ class AIPlayer {
                     showNotification(`⚔️ ${this.team.toUpperCase()} BEATER colpisce!`);
                     this.actionCooldown = 1.5;
                 }
-            } else if (minDist < 15) {
-                // Chase bludger
-                const dir = new THREE.Vector3()
-                    .subVectors(nearestBludger.mesh.position, this.mesh.position)
-                    .normalize();
-                this.velocity.add(dir.multiplyScalar(0.22));
+            } else if (minDist < 22) {
+                const time = Date.now() * 0.001;
+                const target = this.getAerialApproachTarget(nearestBludger.mesh.position, time, 1.2, 1.1, 1.0);
+                this.moveToward(target, 0.09);
             }
         }
     }
@@ -541,12 +570,10 @@ class AIPlayer {
                 this.heldQuaffle = quaffle;
                 showNotification(`🏈 ${this.team.toUpperCase()} CHASER ruba la palla!`);
                 this.actionCooldown = 1;
-            } else if (dist < 20) {
-                // Chase opponent
-                const dir = new THREE.Vector3()
-                    .subVectors(quaffle.holder.mesh.position, this.mesh.position)
-                    .normalize();
-                this.velocity.add(dir.multiplyScalar(0.2));
+            } else if (dist < 28) {
+                const time = Date.now() * 0.001;
+                const target = this.getAerialApproachTarget(quaffle.holder.mesh.position, time, 0.9, 1.0, 0.7);
+                this.moveToward(target, 0.08);
             }
         } else if (!quaffle.held) {
             // Pick up free quaffle
@@ -556,11 +583,9 @@ class AIPlayer {
                 quaffle.holder = this;
                 this.heldQuaffle = quaffle;
             } else {
-                // Go to quaffle
-                const dir = new THREE.Vector3()
-                    .subVectors(quaffle.mesh.position, this.mesh.position)
-                    .normalize();
-                this.velocity.add(dir.multiplyScalar(0.2));
+                const time = Date.now() * 0.001;
+                const target = this.getAerialApproachTarget(quaffle.mesh.position, time, 0.7, 0.9, 0.7);
+                this.moveToward(target, 0.075);
             }
         }
     }
@@ -568,7 +593,12 @@ class AIPlayer {
     updateKeeper(gameState, delta) {
         // Stay near home goals
         const goalZ = this.team === Team.STORM ? -35 : 35;
-        const homePos = new THREE.Vector3(0, 12, goalZ);
+        const time = Date.now() * 0.001;
+        const homePos = new THREE.Vector3(
+            Math.sin(time * 0.75 + this.weavePhase) * 18,
+            12 + Math.cos(time * 0.55 + this.weavePhase) * 7,
+            goalZ + Math.sin(time * 0.45 + this.weavePhase) * 5
+        );
         const dist = this.mesh.position.distanceTo(homePos);
 
         // Try to INTERCEPT incoming quaffle shots
@@ -578,11 +608,9 @@ class AIPlayer {
             const oppDist = this.mesh.position.distanceTo(opponent.mesh.position);
 
             // If opponent is close to our goals, INTERCEPT
-            if (oppDist < 12) {
-                const dir = new THREE.Vector3()
-                    .subVectors(opponent.mesh.position, this.mesh.position)
-                    .normalize();
-                this.velocity.add(dir.multiplyScalar(0.3)); // Fast intercept
+            if (oppDist < 16) {
+                const target = this.getAerialApproachTarget(opponent.mesh.position, time, 0.55, 0.8, 0.45);
+                this.moveToward(target, 0.11);
 
                 // Try to block/tackle
                 if (oppDist < 2 && this.actionCooldown === 0) {
@@ -599,10 +627,7 @@ class AIPlayer {
 
         // Return to home position
         if (dist > 6) {
-            const dir = new THREE.Vector3()
-                .subVectors(homePos, this.mesh.position)
-                .normalize();
-            this.velocity.add(dir.multiplyScalar(0.2));
+            this.moveToward(homePos, 0.075);
         }
     }
 
@@ -622,13 +647,22 @@ class AIPlayer {
     }
 
     goToGoal(gameState) {
+        const opponentTeam = this.team === Team.STORM ? Team.FLAME : Team.STORM;
+        const opponentRings = gameState.goalRings ? gameState.goalRings.filter(r => r.team === opponentTeam) : [];
         const goalZ = this.team === Team.STORM ? 35 : -35;
-        const goalPos = new THREE.Vector3(0, 12, goalZ);
+        const time = Date.now() * 0.001;
+        let goalPos = new THREE.Vector3(this.laneOffset, this.altitudeBias, goalZ);
 
-        const dir = new THREE.Vector3()
-            .subVectors(goalPos, this.mesh.position)
-            .normalize();
-        this.velocity.add(dir.multiplyScalar(0.24));
+        if (opponentRings.length > 0) {
+            const ring = opponentRings[this.goalTargetIndex % opponentRings.length];
+            goalPos = ring.mesh.position.clone();
+        }
+
+        goalPos.x += this.laneOffset * 0.55 + Math.sin(time * 1.1 + this.weavePhase) * 14;
+        goalPos.y += Math.cos(time * 0.9 + this.weavePhase) * 6;
+        goalPos.z += this.team === Team.STORM ? -8 : 8;
+
+        this.moveToward(goalPos, 0.08);
     }
 
     checkScoring(gameState) {
@@ -748,12 +782,12 @@ let keysPressed = {
 let destinyHood = new DestinyHood();
 const BOUNDS = { x: 56, y: 30, z: 56 };
 const SNITCH_UNLOCK_TIME = 45;
-const PLAYER_BASE_SPEED = 0.18;
-const PLAYER_BOOST_SPEED = 0.32;
+const PLAYER_BASE_SPEED = 0.12;
+const PLAYER_BOOST_SPEED = 0.22;
 const SNITCH_CAPTURE_DISTANCE = 2.0;
 const AI_SNITCH_CAPTURE_DISTANCE = 0.85;
-const AI_SEEKER_SPEED_FAR = 0.045;
-const AI_SEEKER_SPEED_NEAR = 0.07;
+const AI_SEEKER_SPEED_FAR = 0.025;
+const AI_SEEKER_SPEED_NEAR = 0.04;
 
 // ===== API =====
 window.gameAPI = {
@@ -1471,9 +1505,9 @@ function updateSnitch(delta) {
 
     const time = Date.now() * 0.001;
 
-    snitchVelocity.x += Math.sin(time * 0.7) * 0.004;
-    snitchVelocity.y += Math.cos(time * 0.5) * 0.002;
-    snitchVelocity.z += Math.sin(time * 0.9) * 0.004;
+    snitchVelocity.x += Math.sin(time * 0.7) * 0.0025;
+    snitchVelocity.y += Math.cos(time * 0.5) * 0.0015;
+    snitchVelocity.z += Math.sin(time * 0.9) * 0.0025;
 
     // Evade all seekers - MOLTO AGILE!
     const allPlayers = [
@@ -1489,15 +1523,15 @@ function updateSnitch(delta) {
             const evasion = new THREE.Vector3()
                 .subVectors(snitch.mesh.position, seeker.mesh.position)
                 .normalize();
-            const evasionForce = dist < 8 ? 0.025 : 0.012;
+            const evasionForce = dist < 8 ? 0.014 : 0.007;
             snitchVelocity.add(evasion.multiplyScalar(evasionForce));
         }
     });
 
     snitch.mesh.position.add(snitchVelocity);
 
-    if (snitchVelocity.length() > 0.18) {
-        snitchVelocity.normalize().multiplyScalar(0.18);
+    if (snitchVelocity.length() > 0.12) {
+        snitchVelocity.normalize().multiplyScalar(0.12);
     }
 
     ['x', 'y', 'z'].forEach(axis => {
