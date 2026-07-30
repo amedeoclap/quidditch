@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Sky Spheres v3.6 - Aerial Pacing</title>
+    <title>Sky Spheres v3.7 - Visual Clarity</title>
     <style>
         * {
             margin: 0;
@@ -16,7 +16,7 @@
 
         body {
             font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: radial-gradient(circle at 50% 20%, #1b5b74 0%, #10263f 42%, #07101f 100%);
             overflow: hidden;
             touch-action: none;
             position: fixed;
@@ -44,7 +44,10 @@
             width: 100%;
             height: 100%;
             height: 100dvh;
-            background: rgba(0,0,0,0.95);
+            background:
+                linear-gradient(rgba(2,8,18,0.78), rgba(2,8,18,0.94)),
+                radial-gradient(circle at 50% 28%, rgba(255,215,0,0.22), transparent 36%),
+                linear-gradient(135deg, #0f3f5a, #111827 58%, #050814);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -286,26 +289,28 @@
 
         #distance {
             position: absolute;
-            bottom: 200px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 18px;
-            padding: 8px 20px;
-            background: rgba(255, 215, 0, 0.4);
-            border-radius: 20px;
+            top: max(72px, calc(env(safe-area-inset-top) + 58px));
+            left: max(12px, env(safe-area-inset-left));
+            transform: none;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 7px 12px;
+            background: rgba(0, 0, 0, 0.48);
+            border: 1px solid rgba(255, 215, 0, 0.48);
+            border-radius: 10px;
         }
 
         #objectiveHint {
             position: absolute;
-            top: 70px;
+            top: max(112px, calc(env(safe-area-inset-top) + 92px));
             left: 50%;
             transform: translateX(-50%);
-            max-width: min(92%, 720px);
-            font-size: 15px;
-            padding: 10px 18px;
-            background: rgba(0, 0, 0, 0.6);
-            border: 2px solid rgba(255, 215, 0, 0.7);
-            border-radius: 14px;
+            max-width: min(76%, 620px);
+            font-size: 13px;
+            padding: 8px 14px;
+            background: rgba(0, 0, 0, 0.46);
+            border: 1px solid rgba(255, 215, 0, 0.46);
+            border-radius: 10px;
             text-align: center;
             line-height: 1.4;
         }
@@ -326,6 +331,40 @@
         #objectiveHint .obj-action {
             color: #FFD54A;
             font-weight: bold;
+        }
+
+        #snitchPointer {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            z-index: 180;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            min-width: 88px;
+            justify-content: center;
+            padding: 7px 10px;
+            border-radius: 999px;
+            background: rgba(10, 8, 0, 0.72);
+            border: 1px solid rgba(255, 215, 0, 0.78);
+            color: #FFD700;
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 0.04em;
+            box-shadow: 0 0 18px rgba(255, 215, 0, 0.5);
+            pointer-events: none;
+        }
+
+        #snitchPointer.visible {
+            display: flex;
+        }
+
+        #snitchPointer::before {
+            content: '➤';
+            display: inline-block;
+            transform: rotate(var(--pointer-angle, 0rad));
+            color: #FFF2A8;
+            text-shadow: 0 0 10px #FFD700;
         }
 
         /* IMPROVED Mobile Controls */
@@ -584,15 +623,17 @@
             }
 
             #objectiveHint {
-                top: 92px;
-                font-size: 13px;
-                padding: 8px 12px;
+                top: max(104px, calc(env(safe-area-inset-top) + 84px));
+                font-size: 12px;
+                padding: 7px 10px;
                 max-width: calc(100vw - 150px);
             }
 
             #distance {
-                bottom: 168px;
-                font-size: 14px;
+                top: max(74px, calc(env(safe-area-inset-top) + 58px));
+                bottom: auto;
+                font-size: 12px;
+                max-width: calc(100vw - 145px);
             }
 
             #radar {
@@ -652,6 +693,12 @@
                 right: max(8px, env(safe-area-inset-right));
                 width: min(260px, calc(100vw - 16px));
                 font-size: 13px;
+            }
+
+            #snitchPointer {
+                font-size: 11px;
+                min-width: 78px;
+                padding: 6px 8px;
             }
         }
 
@@ -734,7 +781,7 @@
     <!-- Start Screen -->
     <div id="startScreen">
         <div id="title">⚡ SKY SPHERES ⚡</div>
-        <div id="subtitle">v3.6 - Aerial Pacing</div>
+        <div id="subtitle">v3.7 - Visual Clarity</div>
         <button class="menu-button" onclick="window.gameAPI.startCeremony()">🎮 INIZIA AVVENTURA</button>
         <p style="margin-top: 25px; font-size: 16px; opacity: 0.9; max-width: 650px; text-align: center; padding: 0 20px;">
             ⚡ VERO QUIDDITCH da Harry Potter!<br>
@@ -796,7 +843,8 @@
         <div id="objectiveHint">Preparazione...</div>
         <div id="distance">🎯 --m</div>
         <canvas id="radar" width="160" height="160"></canvas>
-        <div id="versionBadge">v3.6</div>
+        <div id="versionBadge">v3.7</div>
+        <div id="snitchPointer">BOCCINO</div>
         <div id="cameraHint">Camera: ◀ ▶ / Q R</div>
     </div>
 
